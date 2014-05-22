@@ -431,12 +431,6 @@ class exports.Client
     @deleteQuery folderId, callback
 
   #########################################
-  # Work Item Query Results
-  #########################################
-
-
-
-  #########################################
   # Accounts and Profiles
   #########################################
 
@@ -445,7 +439,6 @@ class exports.Client
     # console.log path
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
-
 
   #########################################
   # Team Rooms
@@ -591,4 +584,154 @@ class exports.Client
   deleteRepository: (repositoryId, callback) ->
     path = buildApiPath 'git/repositories/' + repositoryId
     @client.del path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getCommits: (repositoryId, itemPath, committer, author, fromDate, toDate, pageSize, skip, callback) ->
+    if typeof itemPath is 'function'
+      callback = itemPath
+      itemPath = committer = author = fromDate = toDate = pageSize = skip = null
+    else if typeof committer is 'function'
+      callback = committer
+      committer = author = fromDate = toDate = pageSize = skip = null
+    else if typeof author is 'function'
+      callback = author
+      author = fromDate = toDate = pageSize = skip = null
+    else if typeof fromDate is 'function'
+      callback = fromDate
+      fromDate = toDate = pageSize = skip = null
+    else if typeof toDate is 'function'
+      callback = toDate
+      toDate = pageSize = skip = null
+    else if typeof pageSize is 'function'
+      callback = pageSize
+      pageSize = skip = null
+    else if typeof skip is 'function'
+      callback = skip
+      skip = null
+
+    skip = skip ? 0
+    pageSize = pageSize ? 1000
+
+    params = '$top=' + pageSize + '&$skip=' + skip
+    if itemPath
+      params += '&itempath=' + itemPath
+    if committer
+      params += '&committer=' + committer
+    if author
+      params += '&author=' + author
+    if fromDate
+      params += '&fromdate=' + fromDate
+    if toDate
+      params += '&todate=' + toDate
+
+    path = buildApiPath 'git/repositories/' + repositoryId + '/commits', params
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getCommit: (repositoryId, commitId, changeCount, callback) ->
+    if typeof changeCount is 'function'
+      callback = changeCount
+      changeCount = 0
+
+    path = buildApiPath 'git/repositories/' + repositoryId + '/commits/' + commitId, 'changeCount=' + changeCount
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getDiffs: (repositoryId, baseVersionType, baseVersion, targetVersionType, targetVersion, pageSize, skip, callback) ->
+    if typeof baseVersionType is 'function'
+      callback = baseVersionType
+      baseVersionType = baseVersion = targetVersionType = targetVersion = pageSize = skip = null
+    else if typeof baseVersion is 'function'
+      callback = baseVersion
+      baseVersion = targetVersionType = targetVersion = pageSize = skip = null
+    else if typeof targetVersionType is 'function'
+      callback = targetVersionType
+      targetVersionType = targetVersion = pageSize = skip = null
+    else if typeof targetVersion is 'function'
+      callback = targetVersion
+      targetVersion = pageSize = skip = null
+    else if typeof pageSize is 'function'
+      callback = pageSize
+      pageSize = skip = null
+    else if typeof skip is 'function'
+      callback = skip
+      skip = null
+
+    skip = skip ? 0
+    pageSize = pageSize ? 1000
+
+    params = '$top=' + pageSize + '&$skip=' + skip
+    if (baseVersionType)
+      params += '&baseversiontype=' + baseVersionType
+    if (targetVersionType)
+      params += '&targetversiontype=' + targetVersionType
+    if (baseVersion)
+      params += '&baseversion=' + baseVersion
+    if (targetVersion)
+      params += '&targetversion=' + targetVersion
+
+    path = buildApiPath 'git/repositories/' + repositoryId + '/diffs/commits', params
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getPushes: (repositoryId, fromDate, toDate, pusherId, pageSize, skip, callback) ->
+    if typeof fromDate is 'function'
+      callback = fromDate
+      fromDate = toDate = pusherId = pageSize = skip = null
+    else if typeof toDate is 'function'
+      callback = toDate
+      toDate = pusherId = pageSize = skip = null
+    else if typeof pusherId is 'function'
+      callback = pusherId
+      pusherId = pageSize = skip = null
+    else if typeof pageSize is 'function'
+      callback = pageSize
+      pageSize = skip = null
+    else if typeof skip is 'function'
+      callback = skip
+      skip = null
+
+    skip = skip ? 0
+    pageSize = pageSize ? 1000
+
+    params = '$top=' + pageSize + '&$skip=' + skip
+    if (fromDate)
+      params += '&fromdate=' + fromDate
+    if (toDate)
+      params += '&todate=' + toDate
+    if (pusherId)
+      params += '&pusherid=' + pusherId
+
+    path = buildApiPath 'git/repositories/' + repositoryId + '/pushes', params
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getStats: (repositoryId, branchName, baseVersionType, baseVersion, callback) ->
+    if typeof branchName is 'function'
+      callback = branchName
+      branchName = baseVersionType = baseVersion = null
+    else if typeof baseVersionType is 'function'
+      callback = baseVersionType
+      baseVersionType = baseVersion = null
+    else if typeof baseVersion is 'function'
+      callback = baseVersion
+      baseVersion = null
+
+    params = []
+    if baseVersionType
+      params.push 'baseversiontype=' + baseVersionType
+    if baseVersion
+      params.push 'baseversion=' + baseVersion
+
+    url = 'git/repositories/' + repositoryId + '/stats/branches'
+    if branchName
+      url += '/' + branchName
+
+    path = buildApiPath url, params.join '&'
+    # console.log path
+    @client.get path, (err, res, body) ->
       parseReplyData err, body, callback

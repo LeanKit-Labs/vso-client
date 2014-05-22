@@ -679,11 +679,12 @@ describe('VSO Client Tests', function(){
   } );
 
   describe('Git repository tests', function() {
-    var testRepoName = testRepository = testProject = null;
+    var testRepoName = testRepository = testProject = testCommit = null;
 
     before(function(done){
       testRepoName = 'testRepo-' + (Math.random() + 1).toString(36).substring(7);
       client.getProjects(true, function(err, projects) {
+        // Find a project that uses git
         if (projects && projects.length > 0) {
           testProject = _.find(projects, function(p) {
             return p.capabilities.versioncontrol.sourceControlType === 'Git';
@@ -795,6 +796,147 @@ describe('VSO Client Tests', function(){
         client.deleteRepository(testRepository.id, function(err, repository){
           should.not.exist(err);
           should.exist(repository);
+          done();
+        } );
+      } else {
+        console.log('Warning: missing test repository')
+        done();
+      }
+    } );
+
+    it ( 'should get a list of commits', function(done) {
+      if (testProject) {
+        client.getRepositories(testProject.id, function(err, repositories){
+          should.not.exist(err);
+          should.exist(repositories);
+          if (repositories.length > 0) {
+            var repository = repositories[0];
+            testRepository = repository;
+            client.getCommits(repository.id, function(err, commits){
+              should.not.exist(err);
+              should.exist(commits);
+              commits.should.be.instanceOf(Array);
+              if (commits.length > 0) {
+                var commit = commits[0];
+                commit.should.have.property('commitId');
+                commit.should.have.property('comment');
+                commit.should.have.property('url');
+                commit.author.should.be.instanceOf(Object);
+                commit.committer.should.be.instanceOf(Object);
+                commit.changeCounts.should.be.instanceOf(Object);
+                testCommit = commit;
+              }
+              // console.log(commits);
+              done();
+            });
+          } else {
+            conosole.log('Warning: no repositories in project', testProject);
+            done();
+          }
+        } );
+      } else {
+        console.log('Warning: missing test project')
+        done();
+      }
+    } );
+
+    it ( 'should get a list of commits by author', function(done) {
+      if (testRepository && testCommit) {
+        client.getCommits(testRepository.id, null, null, testCommit.author.name, function(err, commits) {
+          should.not.exist(err);
+          should.exist(commits);
+          commits.should.be.instanceOf(Array);
+          commits.length.should.be.above(0);
+          done();
+        } );
+      } else {
+        console.log('Warning: missing test repository and commit')
+        done();
+      }
+    } );
+
+    it ( 'should get a commit by id', function(done) {
+      if (testRepository && testCommit) {
+        client.getCommit(testRepository.id, testCommit.commitId, function(err, commit) {
+          should.not.exist(err);
+          should.exist(commit);
+          commit.parents.should.be.instanceOf(Array);
+          commit.should.have.property('treeId');
+          commit.push.should.be.instanceOf(Object);
+          commit.should.have.property('commitId');
+          commit.should.have.property('comment');
+          commit.should.have.property('url');
+          commit.author.should.be.instanceOf(Object);
+          commit.committer.should.be.instanceOf(Object);
+          should.not.exist(commit.changes);
+          // console.log(commit);
+          done();
+        } );
+      } else {
+        console.log('Warning: missing test repository and commit')
+        done();
+      }
+    } );
+
+    it ( 'should get a commit by id with changed items', function(done) {
+      if (testRepository && testCommit) {
+        client.getCommit(testRepository.id, testCommit.commitId, 10, function(err, commit) {
+          should.not.exist(err);
+          should.exist(commit);
+          // console.log(commit);
+          commit.changes.should.be.instanceOf(Array);
+          commit.changeCounts.should.be.instanceOf(Object);
+          done();
+        } );
+      } else {
+        console.log('Warning: missing test repository and commit')
+        done();
+      }
+    } );
+
+    it ( 'should get a list of commit diffs', function(done) {
+      if (testRepository) {
+        client.getDiffs(testRepository.id, null, 'master', null, 'develop', function(err, diffs) {
+          should.not.exist(err);
+          should.exist(diffs);
+          diffs.should.have.property('allChangesIncluded');
+          diffs.changes.should.be.instanceOf(Array);
+          diffs.should.have.property('commonCommit');
+          diffs.should.have.property('aheadCount');
+          diffs.should.have.property('behindCount');
+          // console.log(diffs);
+          done();
+        } );
+      } else {
+        console.log('Warning: missing test repository')
+        done();
+      }
+    } );
+
+    it ( 'should get a list of pushes', function(done) {
+      if (testRepository) {
+        client.getPushes(testRepository.id, function(err, pushes) {
+          should.not.exist(err);
+          should.exist(pushes);
+          pushes.should.be.instanceOf(Array);
+          pushes.length.should.be.above(0);
+          // console.log(pushes);
+          done();
+        } );
+      } else {
+        console.log('Warning: missing test repository')
+        done();
+      }
+    } );
+
+    it ( 'should get stats for repository', function(done) {
+      if (testRepository) {
+        client.getStats(testRepository.id, function(err, stats) {
+          should.not.exist(err);
+          should.exist(stats);
+          stats.should.be.instanceOf(Array);
+          stats.length.should.be.above(0);
+          // console.log(stats);
           done();
         } );
       } else {

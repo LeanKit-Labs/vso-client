@@ -738,6 +738,173 @@ exports.Client = (function() {
     });
   };
 
+  Client.prototype.getCommits = function(repositoryId, itemPath, committer, author, fromDate, toDate, pageSize, skip, callback) {
+    var params, path;
+    if (typeof itemPath === 'function') {
+      callback = itemPath;
+      itemPath = committer = author = fromDate = toDate = pageSize = skip = null;
+    } else if (typeof committer === 'function') {
+      callback = committer;
+      committer = author = fromDate = toDate = pageSize = skip = null;
+    } else if (typeof author === 'function') {
+      callback = author;
+      author = fromDate = toDate = pageSize = skip = null;
+    } else if (typeof fromDate === 'function') {
+      callback = fromDate;
+      fromDate = toDate = pageSize = skip = null;
+    } else if (typeof toDate === 'function') {
+      callback = toDate;
+      toDate = pageSize = skip = null;
+    } else if (typeof pageSize === 'function') {
+      callback = pageSize;
+      pageSize = skip = null;
+    } else if (typeof skip === 'function') {
+      callback = skip;
+      skip = null;
+    }
+    skip = skip != null ? skip : 0;
+    pageSize = pageSize != null ? pageSize : 1000;
+    params = '$top=' + pageSize + '&$skip=' + skip;
+    if (itemPath) {
+      params += '&itempath=' + itemPath;
+    }
+    if (committer) {
+      params += '&committer=' + committer;
+    }
+    if (author) {
+      params += '&author=' + author;
+    }
+    if (fromDate) {
+      params += '&fromdate=' + fromDate;
+    }
+    if (toDate) {
+      params += '&todate=' + toDate;
+    }
+    path = buildApiPath('git/repositories/' + repositoryId + '/commits', params);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getCommit = function(repositoryId, commitId, changeCount, callback) {
+    var path;
+    if (typeof changeCount === 'function') {
+      callback = changeCount;
+      changeCount = 0;
+    }
+    path = buildApiPath('git/repositories/' + repositoryId + '/commits/' + commitId, 'changeCount=' + changeCount);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getDiffs = function(repositoryId, baseVersionType, baseVersion, targetVersionType, targetVersion, pageSize, skip, callback) {
+    var params, path;
+    if (typeof baseVersionType === 'function') {
+      callback = baseVersionType;
+      baseVersionType = baseVersion = targetVersionType = targetVersion = pageSize = skip = null;
+    } else if (typeof baseVersion === 'function') {
+      callback = baseVersion;
+      baseVersion = targetVersionType = targetVersion = pageSize = skip = null;
+    } else if (typeof targetVersionType === 'function') {
+      callback = targetVersionType;
+      targetVersionType = targetVersion = pageSize = skip = null;
+    } else if (typeof targetVersion === 'function') {
+      callback = targetVersion;
+      targetVersion = pageSize = skip = null;
+    } else if (typeof pageSize === 'function') {
+      callback = pageSize;
+      pageSize = skip = null;
+    } else if (typeof skip === 'function') {
+      callback = skip;
+      skip = null;
+    }
+    skip = skip != null ? skip : 0;
+    pageSize = pageSize != null ? pageSize : 1000;
+    params = '$top=' + pageSize + '&$skip=' + skip;
+    if (baseVersionType) {
+      params += '&baseversiontype=' + baseVersionType;
+    }
+    if (targetVersionType) {
+      params += '&targetversiontype=' + targetVersionType;
+    }
+    if (baseVersion) {
+      params += '&baseversion=' + baseVersion;
+    }
+    if (targetVersion) {
+      params += '&targetversion=' + targetVersion;
+    }
+    path = buildApiPath('git/repositories/' + repositoryId + '/diffs/commits', params);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getPushes = function(repositoryId, fromDate, toDate, pusherId, pageSize, skip, callback) {
+    var params, path;
+    if (typeof fromDate === 'function') {
+      callback = fromDate;
+      fromDate = toDate = pusherId = pageSize = skip = null;
+    } else if (typeof toDate === 'function') {
+      callback = toDate;
+      toDate = pusherId = pageSize = skip = null;
+    } else if (typeof pusherId === 'function') {
+      callback = pusherId;
+      pusherId = pageSize = skip = null;
+    } else if (typeof pageSize === 'function') {
+      callback = pageSize;
+      pageSize = skip = null;
+    } else if (typeof skip === 'function') {
+      callback = skip;
+      skip = null;
+    }
+    skip = skip != null ? skip : 0;
+    pageSize = pageSize != null ? pageSize : 1000;
+    params = '$top=' + pageSize + '&$skip=' + skip;
+    if (fromDate) {
+      params += '&fromdate=' + fromDate;
+    }
+    if (toDate) {
+      params += '&todate=' + toDate;
+    }
+    if (pusherId) {
+      params += '&pusherid=' + pusherId;
+    }
+    path = buildApiPath('git/repositories/' + repositoryId + '/pushes', params);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getStats = function(repositoryId, branchName, baseVersionType, baseVersion, callback) {
+    var params, path, url;
+    if (typeof branchName === 'function') {
+      callback = branchName;
+      branchName = baseVersionType = baseVersion = null;
+    } else if (typeof baseVersionType === 'function') {
+      callback = baseVersionType;
+      baseVersionType = baseVersion = null;
+    } else if (typeof baseVersion === 'function') {
+      callback = baseVersion;
+      baseVersion = null;
+    }
+    params = [];
+    if (baseVersionType) {
+      params.push('baseversiontype=' + baseVersionType);
+    }
+    if (baseVersion) {
+      params.push('baseversion=' + baseVersion);
+    }
+    url = 'git/repositories/' + repositoryId + '/stats/branches';
+    if (branchName) {
+      url += '/' + branchName;
+    }
+    path = buildApiPath(url, params.join('&'));
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
   return Client;
 
 })();
