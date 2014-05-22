@@ -106,9 +106,9 @@ describe('VSO Client Tests', function(){
         var project = projects[0];
         project.should.have.property('capabilities');
         project.capabilities.should.be.instanceOf(Object);
-        for(var i = 0; i < projects.length; i++) {
-          console.log(projects[i], projects[i].capabilities);
-        }
+        // for(var i = 0; i < projects.length; i++) {
+        //   console.log(projects[i]);
+        // }
         done();
       } );
     } );
@@ -678,7 +678,7 @@ describe('VSO Client Tests', function(){
     } );
   } );
 
-  describe.only('Git repository tests', function() {
+  describe('Git repository tests', function() {
     var testRepoName = testRepository = testProject = null;
 
     before(function(done){
