@@ -711,6 +711,57 @@ class exports.Client
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
 
+  getLabels: (queryOptions, callback) ->
+    if typeof queryOptions is 'function'
+      callback = queryOptions
+      queryOptions = null
+
+    params = []
+    if queryOptions
+      if queryOptions.name
+        params.push 'name=' + queryOptions.name
+      if queryOptions.owner
+        params.push 'owner=' + queryOptions.owner
+      if queryOptions.itemLabelFilter
+        params.push 'itemlabelfilter=' + queryOptions.itemLabelFilter
+      if queryOptions.pageSize
+        params.push '$top=' + queryOptions.pageSize
+      if queryOptions.skip
+        params.push '$skip=' + queryOptions.skip
+
+    p = params.join '&'
+    path = buildApiPath 'tfvc/labels', p
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getLabel: (labelId, maxItemCount, callback) ->
+    if typeof maxItemCount is 'function'
+      callback = maxItemCount
+      maxItemCount = null
+    params = 'maxitemcount=' + maxItemCount ? ''
+    path = buildApiPath 'tfvc/labels/' + labelId, params
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getItemsByLabel: (labelId, pageSize, skip, callback) ->
+    if typeof pageSize is 'function'
+      callback = pageSize
+      pageSize = skip = null
+    if typeof skip is 'function'
+      callback = skip
+      skip = null
+
+    pageSize = pageSize ? 100
+    skip = skip ? 0
+
+    params = '$top=' + pageSize + '&$skip=' + skip
+    path = buildApiPath 'tfvc/labels/' + labelId + '/items', params
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
   #########################################
   # Git Repositories
   #########################################

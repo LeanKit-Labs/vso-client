@@ -913,7 +913,7 @@ describe('VSO Client Tests', function(){
         }
         should.not.exist(err);
         should.exist(workitems);
-        console.log(workitems);
+        // console.log(workitems);
         workitems.should.be.instanceOf(Array);
         done();
         } );
@@ -921,6 +921,19 @@ describe('VSO Client Tests', function(){
         console.log('Warning: no test change set');
         done();
       }
+    } );
+
+    it ( 'should get a list of labels', function(done) {
+      client.getLabels(function(err, labels) {
+        if (err) {
+          console.log(err, labels);
+        }
+        should.not.exist(err);
+        should.exist(labels);
+        // console.log(labels);
+        labels.should.be.instanceOf(Array);
+        done();
+      } );
     } );
   } );
 

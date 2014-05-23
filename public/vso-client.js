@@ -894,6 +894,69 @@ exports.Client = (function() {
     });
   };
 
+  Client.prototype.getLabels = function(queryOptions, callback) {
+    var p, params, path;
+    if (typeof queryOptions === 'function') {
+      callback = queryOptions;
+      queryOptions = null;
+    }
+    params = [];
+    if (queryOptions) {
+      if (queryOptions.name) {
+        params.push('name=' + queryOptions.name);
+      }
+      if (queryOptions.owner) {
+        params.push('owner=' + queryOptions.owner);
+      }
+      if (queryOptions.itemLabelFilter) {
+        params.push('itemlabelfilter=' + queryOptions.itemLabelFilter);
+      }
+      if (queryOptions.pageSize) {
+        params.push('$top=' + queryOptions.pageSize);
+      }
+      if (queryOptions.skip) {
+        params.push('$skip=' + queryOptions.skip);
+      }
+    }
+    p = params.join('&');
+    path = buildApiPath('tfvc/labels', p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getLabel = function(labelId, maxItemCount, callback) {
+    var params, path, _ref;
+    if (typeof maxItemCount === 'function') {
+      callback = maxItemCount;
+      maxItemCount = null;
+    }
+    params = (_ref = 'maxitemcount=' + maxItemCount) != null ? _ref : '';
+    path = buildApiPath('tfvc/labels/' + labelId, params);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getItemsByLabel = function(labelId, pageSize, skip, callback) {
+    var params, path;
+    if (typeof pageSize === 'function') {
+      callback = pageSize;
+      pageSize = skip = null;
+    }
+    if (typeof skip === 'function') {
+      callback = skip;
+      skip = null;
+    }
+    pageSize = pageSize != null ? pageSize : 100;
+    skip = skip != null ? skip : 0;
+    params = '$top=' + pageSize + '&$skip=' + skip;
+    path = buildApiPath('tfvc/labels/' + labelId + '/items', params);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
   Client.prototype.getRepositories = function(projectId, callback) {
     var path;
     path = '';
