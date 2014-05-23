@@ -10,6 +10,9 @@ Features:
 * Query for work items using saved queries or WIQL
 * Create and update work items, including attachments
 * Manage saved queries
+* TFS version control, branches, changesets, shelvesets, and labels
+* Git repositories, commits, diffs, pushes, stats and refs
+* Service hook publishers, consumers, and subscriptions
 
 ### Requirements
 
