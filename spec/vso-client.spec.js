@@ -678,7 +678,271 @@ describe('VSO Client Tests', function(){
     } );
   } );
 
+  describe.only('Version Control tests', function() {
+
+    // ---------------------------------------
+    // Version Control
+    // ---------------------------------------
+
+    it ( 'should return root branches', function(done) {
+      client.getRootBranches(function(err, branches) {
+        if (err) {
+          console.log(err, branches);
+        }
+        should.not.exist(err);
+        should.exist(branches);
+        // console.log(branches);
+        done();
+      } );
+    } );
+
+    it.skip ( 'should return a branch', function(done) {
+      var path = '$/TestProject';
+      client.getBranch(path, true, true, true, function(err, branch) {
+        if (err) {
+          console.log(err, branch);
+        }
+        should.not.exist(err);
+        should.exist(branch);
+        // console.log(branch);
+        done();
+      } );
+    } );
+
+    it ( 'should return shelvesets', function(done) {
+      client.getShelveSets(function(err, shelvesets) {
+        if (err) {
+          console.log(err, shelvesets);
+        }
+        should.not.exist(err);
+        should.exist(shelvesets);
+        // console.log(shelvesets);
+        done();
+      } );
+    } );
+
+    var testCommitId = testChangeSet = null;
+
+    it ( 'should return changesets', function(done) {
+      client.getChangeSets(function(err, changesets) {
+        if (err) {
+          console.log(err, changesets);
+        }
+        should.not.exist(err);
+        should.exist(changesets);
+        // console.log(changesets);
+        changesets.should.be.instanceOf(Array);
+        changesets.length.should.be.above(0);
+        var changeset = changesets[0];
+        changeset.should.have.property('changesetId');
+        changeset.should.have.property('url');
+        changeset.should.have.property('createdDate');
+        changeset.should.have.property('comment');
+        changeset.author.should.be.instanceOf(Object);
+        changeset.checkedInBy.should.be.instanceOf(Object);
+        testCommitId = changeset.changesetId;
+        done();
+      } );
+    } );
+
+    it ( 'should return a changeset by id', function(done) {
+      if (testCommitId) {
+        client.getChangeSet(testCommitId, function(err, changeset) {
+          if (err) {
+            console.log(err, changeset);
+          }
+          should.not.exist(err);
+          should.exist(changeset);
+          // console.log(changeset);
+          changeset.should.have.property('changesetId');
+          changeset.should.have.property('url');
+          changeset.should.have.property('createdDate');
+          changeset.should.have.property('comment');
+          changeset.author.should.be.instanceOf(Object);
+          changeset.checkedInBy.should.be.instanceOf(Object);
+          testChangeSet = changeset;
+          done();
+        } );
+      } else {
+        console.log('Warning: no test change set');
+        done();
+      }
+    } );
+
+    it ( 'should return changsets from range of IDs', function(done) {
+      if (testChangeSet) {
+        var toId = testChangeSet.changesetId;
+        var fromId = toId - 2;
+        var expectedCount = 3;
+        if (fromId < 1) {
+          fromId = 1;
+          expectedCount = toId - fromId + 1;
+        }
+        var queryOptions = {
+          fromId: fromId,
+          toId: testChangeSet.changesetId
+        };
+        client.getChangeSets(queryOptions, function(err, changesets) {
+          if (err) {
+            console.log(err, changesets);
+          }
+          should.not.exist(err);
+          should.exist(changesets);
+          // console.log(changesets);
+          changesets.should.be.instanceOf(Array);
+          changesets.length.should.equal(expectedCount);
+          var changeset = changesets[0];
+          changeset.should.have.property('changesetId');
+          changeset.should.have.property('url');
+          changeset.should.have.property('createdDate');
+          changeset.should.have.property('comment');
+          changeset.author.should.be.instanceOf(Object);
+          changeset.checkedInBy.should.be.instanceOf(Object);
+          done();
+        } );
+      } else {
+        console.log('Warning: no test change set');
+        done();
+      }
+    } );
+
+    it ( 'should return a changeset by id with details', function(done) {
+      if (testCommitId) {
+        var queryOptions = {
+          includeDetails: true,
+          includeWorkItems: false,
+          maxChangeCount: 0,
+          maxCommentLength: 1000
+        };
+        client.getChangeSet(testCommitId, queryOptions, function(err, changeset) {
+          if (err) {
+            console.log(err, changeset);
+          }
+          should.not.exist(err);
+          should.exist(changeset);
+          // console.log(changeset);
+          changeset.checkinNotes.should.be.instanceOf(Array);
+          changeset.policyOverride.should.be.instanceOf(Object);
+          done();
+        } );
+      } else {
+        console.log('Warning: no test change set');
+        done();
+      }
+    } );
+
+    it ( 'should return a changeset by id with work items', function(done) {
+      if (testCommitId) {
+        var queryOptions = {
+          includeDetails: false,
+          includeWorkItems: true,
+          maxChangeCount: 0,
+          maxCommentLength: 1000
+        };
+        client.getChangeSet(testCommitId, queryOptions, function(err, changeset) {
+          if (err) {
+            console.log(err, changeset);
+          }
+          should.not.exist(err);
+          should.exist(changeset);
+          // console.log(changeset);
+          changeset.workItems.should.be.instanceOf(Array);
+          done();
+        } );
+      } else {
+        console.log('Warning: no test change set');
+        done();
+      }
+    } );
+
+    it.skip ( 'should return latest changeset changes', function(done) {
+      client.getChangeSetChanges(function(err, changes) {
+        if (err) {
+          console.log(err, changes);
+        }
+        should.not.exist(err);
+        should.exist(changes);
+        // console.log(changes);
+        changes.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
+    it ( 'should return changes for a changeset by id', function(done) {
+      if (testCommitId) {
+        var queryOptions = {
+          id: testCommitId
+        };
+        client.getChangeSetChanges(queryOptions, function(err, changes) {
+        if (err) {
+          console.log(err, changes);
+        }
+        should.not.exist(err);
+        should.exist(changes);
+        // console.log(changes);
+        changes.should.be.instanceOf(Array);
+        done();
+        } );
+      } else {
+        console.log('Warning: no test change set');
+        done();
+      }
+    } );
+
+    it.skip ( 'should return latest changeset work items', function(done) {
+      client.getChangeSetWorkItems(function(err, workitems) {
+        if (err) {
+          console.log(err, workitems);
+        }
+        should.not.exist(err);
+        should.exist(workitems);
+        // console.log(workitems);
+        workitems.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
+    it ( 'should return work items for a changeset by id', function(done) {
+      if (testCommitId) {
+        var queryOptions = {
+          id: testCommitId
+        };
+        client.getChangeSetWorkItems(queryOptions, function(err, workitems) {
+        if (err) {
+          console.log(err, workitems);
+        }
+        should.not.exist(err);
+        should.exist(workitems);
+        // console.log(workitems);
+        workitems.should.be.instanceOf(Array);
+        done();
+        } );
+      } else {
+        console.log('Warning: no test change set');
+        done();
+      }
+    } );
+
+    it ( 'should get a list of labels', function(done) {
+      client.getLabels(function(err, labels) {
+        if (err) {
+          console.log(err, labels);
+        }
+        should.not.exist(err);
+        should.exist(labels);
+        // console.log(labels);
+        labels.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+  } );
+
   describe('Git repository tests', function() {
+
+    // ---------------------------------------
+    // Git Repositories
+    // ---------------------------------------
+
     var testRepoName = testRepository = testProject = testCommit = null;
 
     before(function(done){
@@ -937,6 +1201,26 @@ describe('VSO Client Tests', function(){
           stats.should.be.instanceOf(Array);
           stats.length.should.be.above(0);
           // console.log(stats);
+          done();
+        } );
+      } else {
+        console.log('Warning: missing test repository')
+        done();
+      }
+    } );
+
+    it ( 'should get refs for repository', function(done) {
+      if (testRepository) {
+        client.getRefs(testRepository.id, function(err, refs) {
+          should.not.exist(err);
+          should.exist(refs);
+          refs.should.be.instanceOf(Array);
+          refs.length.should.be.above(0);
+          // console.log(refs);
+          var ref = refs[0];
+          ref.should.have.property('name');
+          ref.should.have.property('objectId');
+          ref.should.have.property('url');
           done();
         } );
       } else {

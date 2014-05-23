@@ -6,7 +6,7 @@ request = require('request-json');
 
 apiVersion = '1.0-preview';
 
-parseReplyData = function(error, body, callback, cacheCallback) {
+parseReplyData = function(error, body, callback) {
   var err;
   if (error) {
     return callback(error, body);
@@ -669,6 +669,294 @@ exports.Client = (function() {
     });
   };
 
+  Client.prototype.getRootBranches = function(includeChildren, includeDeleted, callback) {
+    var p, params, path;
+    if (typeof includeChildren === 'function') {
+      callback = includeChildren;
+      includeChildren = includeDeleted = false;
+    }
+    if (typeof includeDeleted === 'function') {
+      callback = includeDeleted;
+      includeDeleted = false;
+    }
+    params = [];
+    if (includeChildren) {
+      params.push("includechildren=true");
+    }
+    if (includeDeleted) {
+      params.push("includedeleted=true");
+    }
+    p = params.join('&');
+    path = buildApiPath('tfvc/branches', p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getBranch = function(path, includeChildren, includeParent, includeDeleted, callback) {
+    var p, params;
+    if (typeof includeChildren === 'function') {
+      callback = includeChildren;
+      includeChildren = includeParent = includeDeleted = false;
+    }
+    if (typeof includeParent === 'function') {
+      callback = includeParent;
+      includeParent = includeDeleted = false;
+    }
+    if (typeof includeDeleted === 'function') {
+      callback = includeDeleted;
+      includeDeleted = false;
+    }
+    params = [];
+    if (includeChildren) {
+      params.push("includechildren=true");
+    }
+    if (includeParent) {
+      params.push("includeparent=true");
+    }
+    if (includeDeleted) {
+      params.push("includedeleted=true");
+    }
+    p = params.join('&');
+    path = buildApiPath('tfvc/branches/' + path, p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getShelveSets = function(owner, maxCommentLength, pageSize, skip, callback) {
+    var p, params, path;
+    if (typeof owner === 'function') {
+      callback = owner;
+      owner = maxCommentLength = pageSize = skip = null;
+    }
+    if (typeof maxCommentLength === 'function') {
+      callback = maxCommentLength;
+      maxCommentLength = pageSize = skip = null;
+    }
+    if (typeof pageSize === 'function') {
+      callback = pageSize;
+      pageSize = skip = null;
+    }
+    if (typeof skip === 'function') {
+      callback = skip;
+      skip = null;
+    }
+    maxCommentLength = maxCommentLength != null ? maxCommentLength : 80;
+    pageSize = pageSize != null ? pageSize : 100;
+    skip = skip != null ? skip : 0;
+    params = [];
+    if (owner) {
+      params.push('owner=' + owner);
+    }
+    params.push('maxcommentlength=' + maxCommentLength);
+    params.push('$top=' + pageSize);
+    params.push('$skip=' + skip);
+    p = params.join('&');
+    path = buildApiPath('tfvc/shelvesets', p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getChangeSets = function(queryOptions, callback) {
+    var p, params, path;
+    if (typeof queryOptions === 'function') {
+      callback = queryOptions;
+      queryOptions = null;
+    }
+    params = [];
+    if (queryOptions) {
+      if (queryOptions.itemPath) {
+        params.push('itempath=' + queryOptions.itemPath);
+      }
+      if (queryOptions.version) {
+        params.push('version=' + queryOptions.version);
+      }
+      if (queryOptions.versionType) {
+        params.push('versiontype=' + queryOptions.versionType);
+      }
+      if (queryOptions.versionOption) {
+        params.push('versionoption=' + queryOptions.versionOption);
+      }
+      if (queryOptions.author) {
+        params.push('author=' + queryOptions.author);
+      }
+      if (queryOptions.fromId) {
+        params.push('fromId=' + queryOptions.fromId);
+      }
+      if (queryOptions.toId) {
+        params.push('toId=' + queryOptions.toId);
+      }
+      if (queryOptions.fromDate) {
+        params.push('fromDate=' + queryOptions.fromDate);
+      }
+      if (queryOptions.toDate) {
+        params.push('toDate=' + queryOptions.toDate);
+      }
+      if (queryOptions.pageSize) {
+        params.push('$top=' + queryOptions.pageSize);
+      }
+      if (queryOptions.skip) {
+        params.push('$skip=' + queryOptions.skip);
+      }
+      if (queryOptions.orderby) {
+        params.push('$orderby=' + queryOptions.orderby);
+      }
+      if (queryOptions.maxCommentLength) {
+        params.push('maxcommentlength=' + queryOptions.maxCommentLength);
+      }
+    }
+    p = params.join('&');
+    path = buildApiPath('tfvc/changesets', p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getChangeSet = function(changesetId, queryOptions, callback) {
+    var p, params, path;
+    if (typeof queryOptions === 'function') {
+      callback = queryOptions;
+      queryOptions = null;
+    }
+    params = [];
+    if (queryOptions) {
+      if (queryOptions.includeDetails) {
+        params.push('includedetails=true');
+      }
+      if (queryOptions.includeWorkItems) {
+        params.push('includeworkitems=true');
+      }
+      if (queryOptions.maxChangeCount) {
+        params.push('maxchangecount=' + queryOptions.maxChangeCount);
+      }
+      if (queryOptions.maxCommentLength) {
+        params.push('maxcommentlength=' + queryOptions.maxCommentLength);
+      }
+    }
+    p = params.join('&');
+    path = buildApiPath('tfvc/changesets/' + changesetId, p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getChangeSetChanges = function(queryOptions, callback) {
+    var p, params, path, url;
+    if (typeof queryOptions === 'function') {
+      callback = queryOptions;
+      queryOptions = null;
+    }
+    url = 'tfvc/changesets/latest/changes';
+    params = [];
+    if (queryOptions) {
+      if (queryOptions.id) {
+        url = 'tfvc/changesets/' + queryOptions.id + '/changes';
+      }
+      if (queryOptions.pageSize) {
+        params.push('$top=' + queryOptions.pageSize);
+      }
+      if (queryOptions.skip) {
+        params.push('$skip=' + queryOptions.skip);
+      }
+    }
+    p = params.join('&');
+    path = buildApiPath(url, p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getChangeSetWorkItems = function(queryOptions, callback) {
+    var p, params, path, url;
+    if (typeof queryOptions === 'function') {
+      callback = queryOptions;
+      queryOptions = null;
+    }
+    url = 'tfvc/changesets/latest/workitems';
+    params = [];
+    if (queryOptions) {
+      if (queryOptions.id) {
+        url = 'tfvc/changesets/' + queryOptions.id + '/workitems';
+      }
+      if (queryOptions.pageSize) {
+        params.push('$top=' + queryOptions.pageSize);
+      }
+      if (queryOptions.skip) {
+        params.push('$skip=' + queryOptions.skip);
+      }
+    }
+    p = params.join('&');
+    path = buildApiPath(url, p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getLabels = function(queryOptions, callback) {
+    var p, params, path;
+    if (typeof queryOptions === 'function') {
+      callback = queryOptions;
+      queryOptions = null;
+    }
+    params = [];
+    if (queryOptions) {
+      if (queryOptions.name) {
+        params.push('name=' + queryOptions.name);
+      }
+      if (queryOptions.owner) {
+        params.push('owner=' + queryOptions.owner);
+      }
+      if (queryOptions.itemLabelFilter) {
+        params.push('itemlabelfilter=' + queryOptions.itemLabelFilter);
+      }
+      if (queryOptions.pageSize) {
+        params.push('$top=' + queryOptions.pageSize);
+      }
+      if (queryOptions.skip) {
+        params.push('$skip=' + queryOptions.skip);
+      }
+    }
+    p = params.join('&');
+    path = buildApiPath('tfvc/labels', p);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getLabel = function(labelId, maxItemCount, callback) {
+    var params, path, _ref;
+    if (typeof maxItemCount === 'function') {
+      callback = maxItemCount;
+      maxItemCount = null;
+    }
+    params = (_ref = 'maxitemcount=' + maxItemCount) != null ? _ref : '';
+    path = buildApiPath('tfvc/labels/' + labelId, params);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getItemsByLabel = function(labelId, pageSize, skip, callback) {
+    var params, path;
+    if (typeof pageSize === 'function') {
+      callback = pageSize;
+      pageSize = skip = null;
+    }
+    if (typeof skip === 'function') {
+      callback = skip;
+      skip = null;
+    }
+    pageSize = pageSize != null ? pageSize : 100;
+    skip = skip != null ? skip : 0;
+    params = '$top=' + pageSize + '&$skip=' + skip;
+    path = buildApiPath('tfvc/labels/' + labelId + '/items', params);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
   Client.prototype.getRepositories = function(projectId, callback) {
     var path;
     path = '';
@@ -900,6 +1188,22 @@ exports.Client = (function() {
       url += '/' + branchName;
     }
     path = buildApiPath(url, params.join('&'));
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getRefs = function(repositoryId, filter, callback) {
+    var path, url;
+    if (typeof filter === 'function') {
+      callback = filter;
+      filter = null;
+    }
+    url = 'git/repositories/' + repositoryId + '/refs';
+    if (filter) {
+      url += '/' + filter;
+    }
+    path = buildApiPath(url);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
