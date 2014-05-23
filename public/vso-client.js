@@ -1209,6 +1209,70 @@ exports.Client = (function() {
     });
   };
 
+  Client.prototype.getPublishers = function(callback) {
+    var path;
+    path = buildApiPath('hooks/publishers');
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getConsumers = function(callback) {
+    var path;
+    path = buildApiPath('hooks/consumers');
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getConsumer = function(consumerId, callback) {
+    var path;
+    path = buildApiPath('hooks/consumers/' + consumerId);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getConsumerActions = function(consumerId, callback) {
+    var path;
+    path = buildApiPath('hooks/consumers/' + consumerId + '/actions');
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getConsumerAction = function(consumerId, action, callback) {
+    var path;
+    path = buildApiPath('hooks/consumers/' + consumerId + '/actions/' + action);
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getSubscriptions = function(callback) {
+    var path;
+    path = buildApiPath('hooks/subscriptions');
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.createSubscription = function(subscription, callback) {
+    var path;
+    path = buildApiPath('hooks/subscriptions');
+    return this.client.post(path, subscription, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.querySubscriptions = function(queryOptions, callback) {
+    var path;
+    path = buildApiPath('hooks/subscriptionsquery');
+    return this.client.post(path, queryOptions, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
   return Client;
 
 })();
