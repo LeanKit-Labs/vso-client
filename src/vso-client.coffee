@@ -2,7 +2,7 @@ _ = require 'lodash'
 request = require 'request-json'
 apiVersion = '1.0-preview'
 
-parseReplyData = (error, body, callback, cacheCallback) ->
+parseReplyData = (error, body, callback) ->
   # console.log body
   if error
     callback error, body
@@ -16,6 +16,7 @@ parseReplyData = (error, body, callback, cacheCallback) ->
     # console.log err, body
     callback err, body
   else if body and body.value
+    # console.log err, body
     callback error, body.value
   else if body and body.id
     callback error, body
@@ -536,6 +537,181 @@ class exports.Client
       parseReplyData err, body, callback
 
   #########################################
+  # Version Control
+  #########################################
+
+  getRootBranches: (includeChildren, includeDeleted, callback) ->
+    if typeof includeChildren is 'function'
+      callback = includeChildren
+      includeChildren = includeDeleted = false
+    if typeof includeDeleted is 'function'
+      callback = includeDeleted
+      includeDeleted = false
+
+    params = []
+    if includeChildren
+      params.push "includechildren=true"
+    if includeDeleted
+      params.push "includedeleted=true"
+    p = params.join '&'
+    path = buildApiPath 'tfvc/branches', p
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getBranch: (path, includeChildren, includeParent, includeDeleted, callback) ->
+    if typeof includeChildren is 'function'
+      callback = includeChildren
+      includeChildren = includeParent = includeDeleted = false
+    if typeof includeParent is 'function'
+      callback = includeParent
+      includeParent = includeDeleted = false
+    if typeof includeDeleted is 'function'
+      callback = includeDeleted
+      includeDeleted = false
+
+    params = []
+    if includeChildren
+      params.push "includechildren=true"
+    if includeParent
+      params.push "includeparent=true"
+    if includeDeleted
+      params.push "includedeleted=true"
+    p = params.join '&'
+    path = buildApiPath 'tfvc/branches/' + path, p
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getShelveSets: (owner, maxCommentLength, pageSize, skip, callback) ->
+    if typeof owner is 'function'
+      callback = owner
+      owner = maxCommentLength = pageSize = skip = null
+    if typeof maxCommentLength is 'function'
+      callback = maxCommentLength
+      maxCommentLength = pageSize = skip = null
+    if typeof pageSize is 'function'
+      callback = pageSize
+      pageSize = skip = null
+    if typeof skip is 'function'
+      callback = skip
+      skip = null
+
+    maxCommentLength = maxCommentLength ? 80
+    pageSize = pageSize ? 100
+    skip = skip ? 0
+    params = []
+    if owner
+      params.push 'owner=' + owner
+    params.push 'maxcommentlength=' + maxCommentLength
+    params.push '$top=' + pageSize
+    params.push '$skip=' + skip
+    p = params.join '&'
+    path = buildApiPath 'tfvc/shelvesets', p
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getChangeSets: (queryOptions, callback) ->
+    if typeof queryOptions is 'function'
+      callback = queryOptions
+      queryOptions = null
+
+    params = []
+    if queryOptions
+      if queryOptions.itemPath
+        params.push 'itempath=' + queryOptions.itemPath
+      if queryOptions.version
+        params.push 'version=' + queryOptions.version
+      if queryOptions.versionType
+        params.push 'versiontype=' + queryOptions.versionType
+      if queryOptions.versionOption
+        params.push 'versionoption=' + queryOptions.versionOption
+      if queryOptions.author
+        params.push 'author=' + queryOptions.author
+      if queryOptions.fromId
+        params.push 'fromId=' + queryOptions.fromId
+      if queryOptions.toId
+        params.push 'toId=' + queryOptions.toId
+      if queryOptions.fromDate
+        params.push 'fromDate=' + queryOptions.fromDate
+      if queryOptions.toDate
+        params.push 'toDate=' + queryOptions.toDate
+      if queryOptions.pageSize
+        params.push '$top=' + queryOptions.pageSize
+      if queryOptions.skip
+        params.push '$skip=' + queryOptions.skip
+      if queryOptions.orderby
+        params.push '$orderby=' + queryOptions.orderby
+      if queryOptions.maxCommentLength
+        params.push 'maxcommentlength=' + queryOptions.maxCommentLength
+
+    p = params.join '&'
+    path = buildApiPath 'tfvc/changesets', p
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getChangeSet: (changesetId, queryOptions, callback) ->
+    if typeof queryOptions is 'function'
+      callback = queryOptions
+      queryOptions = null
+
+    # console.log 'queryOptions', queryOptions
+    params = []
+    if queryOptions
+      if queryOptions.includeDetails
+        params.push 'includedetails=true'
+      if queryOptions.includeWorkItems
+        params.push 'includeworkitems=true'
+      if queryOptions.maxChangeCount
+        params.push 'maxchangecount=' + queryOptions.maxChangeCount
+      if queryOptions.maxCommentLength
+        params.push 'maxcommentlength=' + queryOptions.maxCommentLength
+
+    p = params.join '&'
+    path = buildApiPath 'tfvc/changesets/' + changesetId, p
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getChangeSetChanges: (queryOptions, callback) ->
+    if typeof queryOptions is 'function'
+      callback = queryOptions
+      queryOptions = null
+    url = 'tfvc/changesets/latest/changes'
+    params = []
+    if queryOptions
+      if queryOptions.id
+        url = 'tfvc/changesets/' + queryOptions.id + '/changes'
+      if queryOptions.pageSize
+        params.push '$top=' + queryOptions.pageSize
+      if queryOptions.skip
+        params.push '$skip=' + queryOptions.skip
+    p = params.join '&'
+    path = buildApiPath url, p
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getChangeSetWorkItems: (queryOptions, callback) ->
+    if typeof queryOptions is 'function'
+      callback = queryOptions
+      queryOptions = null
+    url = 'tfvc/changesets/latest/workitems'
+    params = []
+    if queryOptions
+      if queryOptions.id
+        url = 'tfvc/changesets/' + queryOptions.id + '/workitems'
+      if queryOptions.pageSize
+        params.push '$top=' + queryOptions.pageSize
+      if queryOptions.skip
+        params.push '$skip=' + queryOptions.skip
+    p = params.join '&'
+    path = buildApiPath url, p
+    # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  #########################################
   # Git Repositories
   #########################################
 
@@ -733,5 +909,18 @@ class exports.Client
 
     path = buildApiPath url, params.join '&'
     # console.log path
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getRefs: (repositoryId, filter, callback) ->
+    if typeof filter is 'function'
+      callback = filter
+      filter = null
+
+    url = 'git/repositories/' + repositoryId + '/refs'
+    if filter
+      url += '/' + filter
+
+    path = buildApiPath url
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
