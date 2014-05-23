@@ -678,7 +678,7 @@ describe('VSO Client Tests', function(){
     } );
   } );
 
-  describe.only('Version Control tests', function() {
+  describe('Version Control tests', function() {
 
     // ---------------------------------------
     // Version Control
@@ -1228,6 +1228,177 @@ describe('VSO Client Tests', function(){
         done();
       }
     } );
+
+  } );
+
+  describe('Service Hook tests', function() {
+
+    // ---------------------------------------
+    // Service Hooks
+    // ---------------------------------------
+
+    it ( 'should get a list of publishers', function(done) {
+      client.getConsumers(function(err, publishers) {
+        if (err) console.log(err, publishers);
+        should.not.exist(err);
+        should.exist(publishers);
+        // console.log(publishers);
+        publishers.should.be.instanceOf(Array);
+        var publisher = _.find(publishers, function(c) {
+          return c.id === 'webHooks';
+        } );
+        should.exist(publisher);
+        // console.log(publisher);
+        // console.log(publisher.actions[0].inputDescriptors);
+        publisher.should.have.property('id');
+        publisher.should.have.property('url');
+        publisher.should.have.property('name');
+        publisher.should.have.property('description');
+        publisher.should.have.property('informationUrl');
+        publisher.should.have.property('authenticationType');
+        publisher.inputDescriptors.should.be.instanceOf(Array);
+        publisher.actions.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
+    it ( 'should get a list of consumers', function(done) {
+      client.getConsumers(function(err, consumers) {
+        if (err) console.log(err, consumers);
+        should.not.exist(err);
+        should.exist(consumers);
+        // console.log(consumers);
+        consumers.should.be.instanceOf(Array);
+        var zendesk = _.find(consumers, function(c) {
+          return c.id === 'zendesk';
+        } );
+        should.exist(zendesk);
+        // console.log(zendesk);
+        zendesk.should.have.property('id');
+        zendesk.should.have.property('url');
+        zendesk.should.have.property('name');
+        zendesk.should.have.property('description');
+        zendesk.should.have.property('informationUrl');
+        zendesk.should.have.property('authenticationType');
+        zendesk.inputDescriptors.should.be.instanceOf(Array);
+        zendesk.actions.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
+    it ( 'should get a consumer by id', function(done) {
+      client.getConsumer('zapier', function(err, consumer) {
+        if (err) console.log(err, consumer);
+        should.not.exist(err);
+        should.exist(consumer);
+        // console.log(consumer);
+        consumer.should.have.property('id');
+        consumer.should.have.property('url');
+        consumer.should.have.property('name');
+        consumer.should.have.property('description');
+        consumer.should.have.property('informationUrl');
+        consumer.should.have.property('authenticationType');
+        consumer.inputDescriptors.should.be.instanceOf(Array);
+        consumer.actions.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
+    it ( 'should get a list of consumer actions by id', function(done) {
+      client.getConsumerActions('zapier', function(err, actions) {
+        if (err) console.log(err, actions);
+        should.not.exist(err);
+        should.exist(actions);
+        // console.log(actions);
+        actions.should.be.instanceOf(Array);
+        actions.length.should.be.above(0);
+        var action = actions[0];
+        // console.log(action);
+        action.should.have.property('id');
+        action.should.have.property('consumerId');
+        action.should.have.property('url');
+        action.should.have.property('name');
+        action.should.have.property('description');
+        action.inputDescriptors.should.be.instanceOf(Array);
+        action.supportedEventTypes.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
+    it ( 'should get a list of consumer action by id', function(done) {
+      client.getConsumerAction('zapier', 'sendNotification', function(err, action) {
+        if (err) console.log(err, action);
+        should.not.exist(err);
+        should.exist(action);
+        // console.log(action);
+        action.should.have.property('id');
+        action.should.have.property('consumerId');
+        action.should.have.property('url');
+        action.should.have.property('name');
+        action.should.have.property('description');
+        action.inputDescriptors.should.be.instanceOf(Array);
+        action.supportedEventTypes.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
+    it.skip ( 'should create a subscription', function(done) {
+      var subscription = {
+        consumerActionId: 'httpRequest',
+        consumerId: 'webHooks',
+        consumerInputs: {
+          url: 'http://localhost:1234/test/consumer'
+        },
+        eventType: 'buildCompleted',
+        publisherId: 'webHooks',
+        publisherInputs: {
+          url: 'http://localhost:1234/test/publisher'
+        }
+      };
+      client.createSubscription(subscription, function(err, sub) {
+        if (err) console.log(err, sub);
+        should.not.exist(err);
+        should.exist(sub);
+        console.log(sub);
+      } );
+    } );
+
+    it ( 'should get a list of subscriptions', function(done) {
+      client.getSubscriptions(function(err, subscriptions) {
+        if (err) console.log(err, subscriptions);
+        should.not.exist(err);
+        should.exist(subscriptions);
+        // console.log(subscriptions);
+        subscriptions.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
+    it.skip ( 'should get a list of subscriptions by query', function(done) {
+      // Documentation incomplete
+      var queryOptions = {
+          publisherId: '',
+          eventType: '',
+          consumerId: '',
+          consumerActionId: '',
+          publisherInputFilters: [{
+            conditions: [{
+              inputId: '',
+              operator: 'equals',
+              inputValue: ''
+            }]
+          }]
+      };
+      client.querySubscriptions(queryOptions, function(err, subscriptions) {
+        if (err) console.log(err, subscriptions);
+        should.not.exist(err);
+        should.exist(subscriptions);
+        // console.log(subscriptions);
+        subscriptions.should.be.instanceOf(Array);
+        done();
+      } );
+    } );
+
 
   } );
 

@@ -975,3 +975,47 @@ class exports.Client
     path = buildApiPath url
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
+
+  #########################################
+  # Service Hooks
+  #########################################
+
+  getPublishers: (callback) ->
+    path = buildApiPath 'hooks/publishers'
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getConsumers: (callback) ->
+    path = buildApiPath 'hooks/consumers'
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getConsumer: (consumerId, callback) ->
+    path = buildApiPath 'hooks/consumers/' + consumerId
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getConsumerActions: (consumerId, callback) ->
+    path = buildApiPath 'hooks/consumers/' + consumerId + '/actions'
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getConsumerAction: (consumerId, action, callback) ->
+    path = buildApiPath 'hooks/consumers/' + consumerId + '/actions/' + action
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  getSubscriptions: (callback) ->
+    path = buildApiPath 'hooks/subscriptions'
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  createSubscription: (subscription, callback) ->
+    path = buildApiPath 'hooks/subscriptions'
+    @client.post path, subscription, (err, res, body) ->
+      parseReplyData err, body, callback
+
+  querySubscriptions: (queryOptions, callback) ->
+    path = buildApiPath 'hooks/subscriptionsquery'
+    @client.post path, queryOptions, (err, res, body) ->
+      parseReplyData err, body, callback
