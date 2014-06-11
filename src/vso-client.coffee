@@ -982,8 +982,15 @@ class exports.Client
 
   getBuildDefinitions: (callback) ->
     path= buildApiPath 'build/definitions'
-    @client.get path(err,res,body) ->
+    @client.get path, (err,res,body) ->
       parseReplyData err, body, callback
+
+  queueBuild: (buildRequest, callback) ->
+    path = buildApiPath 'build/requests'
+    @client.post path, buildRequest, (err, res, body) ->
+      parseReplyData err, body, callback
+
+
   #########################################
   # Service Hooks
   #########################################
