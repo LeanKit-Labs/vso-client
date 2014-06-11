@@ -977,6 +977,14 @@ class exports.Client
       parseReplyData err, body, callback
 
   #########################################
+  # Builds
+  #########################################
+
+  getBuildDefinitions: (callback) ->
+    path= buildApiPath 'build/definitions'
+    @client.get path(err,res,body) ->
+      parseReplyData err, body, callback
+  #########################################
   # Service Hooks
   #########################################
 
