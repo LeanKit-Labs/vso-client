@@ -47,6 +47,25 @@ describe('VSO Client Tests', function(){
     field.value.should.equal(20);
     field.field.name.should.equal('Rev');
   } );
+  
+  describe('Build tests', function(){
+    var build = null;
+
+    it('should return a list of build definitions', function() {
+      client.getBuildDefinitions(function(err, builds){
+        should.not.exist(err);
+        should.exist(builds);
+        console.log(builds);
+        builds.length.should.be.above(0);
+        build = builds[0];
+        build.should.have.property('id');
+        build.should.have.property('name');
+        build.should.have.property('url');      
+        testProject = project;
+        done();
+      });
+    });
+  })
 
   describe('Project tests', function() {
     var testProject = null,
