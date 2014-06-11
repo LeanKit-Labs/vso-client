@@ -3,7 +3,7 @@ request = require 'request-json'
 apiVersion = '1.0-preview'
 
 parseReplyData = (error, body, callback) ->
-  # console.log body
+  console.log body
   if error
     callback error, body
   else if (body.errorCode or body.errorCode is 0) and (body.message or body.typeKey)
@@ -522,13 +522,16 @@ class exports.Client
       parseReplyData err, body, callback
 
   createMessage: (roomId, message, callback) ->
+    console.log 'eee'
     path = buildApiPath 'chat/rooms/' + roomId + '/messages'
-    @client.post path, (err, res, body) ->
+    @client.post path, message, (err, res, body) ->
       parseReplyData err, body, callback
 
   updateMessage: (roomId, messageId, message, callback) ->
+    console.log 'in client'
     path = buildApiPath 'chat/rooms/' + roomId + '/messages/' + messageId
     @client.patch path, (err, res, body) ->
+      console.log res
       parseReplyData err, body, callback
 
   deleteMessage: (roomId, messageId, callback) ->
