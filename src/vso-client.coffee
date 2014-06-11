@@ -522,14 +522,12 @@ class exports.Client
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
 
-  createMessage: (roomId, message, callback) ->
-    console.log 'eee'
+  createMessage: (roomId, message, callback) ->    
     path = buildApiPath 'chat/rooms/' + roomId + '/messages'
     @client.post path, message, (err, res, body) ->
       parseReplyData err, body, callback
 
-  updateMessage: (roomId, messageId, message, callback) ->
-    console.log 'in client'
+  updateMessage: (roomId, messageId, message, callback) ->    
     path = buildApiPath 'chat/rooms/' + roomId + '/messages/' + messageId
     @client.patch path, (err, res, body) ->
       console.log res
