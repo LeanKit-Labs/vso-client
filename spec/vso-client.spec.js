@@ -64,17 +64,17 @@ describe('VSO Client Tests', function(){
       });
     });
 
-    it('should queue a build', function() {        
-      var buildRequest = { definition : {id: 1},  reason: 'Manual', priority: 'Normal'}
-      console.log(buildRequest);
-      client.queueBuild(buildRequest,function(err, buildResponse){             
-        should.not.exist(err);
-        should.exist(buildResponse);        
-        buildResponse.length.should.be.above(0);
-        buildResponse.should.have.property('status')      
-        done();
-      });
-    });
+    //it('should queue a build', function() {        
+      //var buildRequest = { definition : {id: 1},  reason: 'Manual', priority: 'Normal'}
+      //console.log(buildRequest);
+      //client.queueBuild(buildRequest,function(err, buildResponse){             
+       // should.not.exist(err);
+       // should.exist(buildResponse);        
+       // buildResponse.length.should.be.above(0);
+       // buildResponse.should.have.property('status')      
+       // done();
+      //});
+    //});
   })
 
   describe('Project tests', function() {

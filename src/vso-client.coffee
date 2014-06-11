@@ -7,21 +7,21 @@ parseReplyData = (error, body, callback) ->
   if error
     callback error, body
   else if (body.errorCode or body.errorCode is 0) and (body.message or body.typeKey)
-    # console.log error, body
+    #console.log error, body
     err = 'Error ' + body.errorCode + ': '
     if body.message and body.message.length > 0
       err += body.message
     else
       err += body.typeKey
-    # console.log err, body
+    #console.log err, body
     callback err, body
   else if body and body.value
-    # console.log err, body
+    #console.log err, body
     callback error, body.value
   else if body and body.id
     callback error, body
   else if body and body.length > 0
-    # console.log body
+    #console.log body
     callback 'Unknown Error', body
   else
     callback error, body
@@ -486,10 +486,11 @@ class exports.Client
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
 
-  joinRoom: (roomId, userId, callback) ->
-    path = buildApiPath 'chat/rooms/' + roomId + '/users/' + userId
-    @client.put path, (err, res, body) ->
-      parseReplyData err, body, callback
+  joinRoom: (roomId, userId, userGuid, callback) ->    
+    console.log userId
+    path = buildApiPath 'chat/rooms/' + roomId + '/users/' + userGuid  
+    @client.put path, userId, (err, res, body) ->      
+      callback err, res.statusCode
 
   leaveRoom: (roomId, userId, callback) ->
     path = buildApiPath 'chat/rooms/' + roomId + '/users/' + userId
