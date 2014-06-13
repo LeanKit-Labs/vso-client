@@ -523,7 +523,7 @@ class exports.Client
 
   createMessage: (roomId, message, callback) ->
     path = buildApiPath 'chat/rooms/' + roomId + '/messages'
-    @client.post path, (err, res, body) ->
+    @client.post path, message, (err, res, body) ->
       parseReplyData err, body, callback
 
   updateMessage: (roomId, messageId, message, callback) ->
