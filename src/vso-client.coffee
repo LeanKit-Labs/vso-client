@@ -1,6 +1,10 @@
 _ = require 'lodash'
-request = require 'request-json'
+requestJson = require 'request-json'
+request = require "request"
+
 apiVersion = '1.0-preview'
+
+vsoTokenUri = 'https://app.vssps.visualstudio.com/oauth2/token'
 
 parseReplyData = (error, body, callback) ->
   #console.log body
@@ -33,14 +37,52 @@ buildApiPath = (path, params) ->
   # console.log returnPath
   returnPath
 
-exports.createClient = (url, collection, username, password) -> new exports.Client url, collection, username, password
+requestToken = (clientAssertion, assertion, grantType, redirectUri, callback, tokenUri) ->
 
+  request.post tokenUri, {        
+        # proxy: "http://127.0.0.1:8888" ,
+        form : {
+            "client_assertion_type" : "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+            "client_assertion" : clientAssertion,
+            "response_type" : "Assertion",
+            "grant_type" : grantType,
+            "assertion" : assertion,
+            "redirect_uri" : redirectUri
+        }
+    }, (err,res,body) ->
+      console.log("===================== " + res.statusCode)
+      if (err)
+          callback err, body
+      else if (res.statusCode != 200 and res.statusCode != 400 and res.statusCode != 401)
+          callback "Error Code " + res.statusCode, body
+      else
+          callback err, JSON.parse body
+
+exports.createClient = (url, collection, username, password) -> new exports.Client url, collection, (new AuthenticationCredential  username, password)
+exports.createOAuthClient = (url, collection, accessToken) -> new exports.Client url, collection, (new  AuthenticationOAuth accessToken)
+
+exports.getToken = (clientAssertion, assertion, redirectUri, callback, tokenUri = vsoTokenUri) -> requestToken(clientAssertion, assertion, "urn:ietf:params:oauth:grant-type:jwt-bearer", redirectUri, callback, tokenUri)
+exports.refreshToken = (clientAssertion, assertion, redirectUri, callback, tokenUri = vsoTokenUri) -> requestToken(clientAssertion, assertion, "refresh_token", redirectUri, callback, tokenUri)
+
+class AuthenticationCredential
+  constructor: (@username, @password) ->
+        @type = "Credential"
+
+class AuthenticationOAuth
+  constructor: (@accessToken) ->
+        @type = "OAuth"
+	
 class exports.Client
-  constructor: (@url, @collection, @username, @password) ->
+  constructor: (@url, @collection, authentication) ->
     apiUrl = url + '/' + collection + '/_apis/'
-    @client = request.newClient(apiUrl)
-    @client.setBasicAuth @username, @password
-    @apiVersion = '1.0-preview'
+    @client = requestJson.newClient(apiUrl)
+    if (authentication is AuthenticationCredential || authentication.type == "Credential") 
+        @client.setBasicAuth authentication.username, authentication.password 
+    else  if (authentication is AuthenticationOAuth || authentication.type == "OAuth") 
+        @client.headers.Authorization = "bearer " + authentication.accessToken
+    else
+        throw "unknown authentication type"
+    @_authType = authentication.type
 
   findItemField: (fields, fieldName) ->
     field = _.find fields, (f) ->
@@ -54,6 +96,11 @@ class exports.Client
       if field
         break
     field
+  
+  setAccessToken : (acessToken) ->
+    if (@_authType != "OAuth")
+        throw "can only set access token for OAuth client"    
+    @client.headers.Authorization = "bearer " + acessToken
 
   #########################################
   # Projects and Teams
