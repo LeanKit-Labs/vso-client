@@ -596,11 +596,12 @@ exports.Client = (function() {
     });
   };
 
-  Client.prototype.joinRoom = function(roomId, userId, callback) {
+  Client.prototype.joinRoom = function(roomId, userId, userGuid, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/users/' + userId);
-    return this.client.put(path, function(err, res, body) {
-      return parseReplyData(err, body, callback);
+    console.log(userId);
+    path = buildApiPath('chat/rooms/' + roomId + '/users/' + userGuid);
+    return this.client.put(path, userId, function(err, res, body) {
+      return callback(err, res.statusCode);
     });
   };
 
@@ -648,7 +649,7 @@ exports.Client = (function() {
   Client.prototype.createMessage = function(roomId, message, callback) {
     var path;
     path = buildApiPath('chat/rooms/' + roomId + '/messages');
-    return this.client.post(path, function(err, res, body) {
+    return this.client.post(path, message, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
   };
@@ -657,6 +658,7 @@ exports.Client = (function() {
     var path;
     path = buildApiPath('chat/rooms/' + roomId + '/messages/' + messageId);
     return this.client.patch(path, function(err, res, body) {
+      console.log(res);
       return parseReplyData(err, body, callback);
     });
   };
@@ -1205,6 +1207,22 @@ exports.Client = (function() {
     }
     path = buildApiPath(url);
     return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.getBuildDefinitions = function(callback) {
+    var path;
+    path = buildApiPath('build/definitions');
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
+  Client.prototype.queueBuild = function(buildRequest, callback) {
+    var path;
+    path = buildApiPath('build/requests');
+    return this.client.post(path, buildRequest, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
   };
