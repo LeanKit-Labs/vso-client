@@ -3,25 +3,25 @@ request = require 'request-json'
 apiVersion = '1.0-preview'
 
 parseReplyData = (error, body, callback) ->
-  # console.log body
+  console.log body
   if error
     callback error, body
   else if (body.errorCode or body.errorCode is 0) and (body.message or body.typeKey)
-    # console.log error, body
+    #console.log error, body
     err = 'Error ' + body.errorCode + ': '
     if body.message and body.message.length > 0
       err += body.message
     else
       err += body.typeKey
-    # console.log err, body
+    #console.log err, body
     callback err, body
   else if body and body.value
-    # console.log err, body
+    #console.log err, body
     callback error, body.value
   else if body and body.id
     callback error, body
   else if body and body.length > 0
-    # console.log body
+    #console.log body
     callback 'Unknown Error', body
   else
     callback error, body
@@ -486,10 +486,11 @@ class exports.Client
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
 
-  joinRoom: (roomId, userId, callback) ->
-    path = buildApiPath 'chat/rooms/' + roomId + '/users/' + userId
-    @client.put path, (err, res, body) ->
-      parseReplyData err, body, callback
+  joinRoom: (roomId, userId, userGuid, callback) ->    
+    console.log userId
+    path = buildApiPath 'chat/rooms/' + roomId + '/users/' + userGuid  
+    @client.put path, userId, (err, res, body) ->      
+      callback err, res.statusCode
 
   leaveRoom: (roomId, userId, callback) ->
     path = buildApiPath 'chat/rooms/' + roomId + '/users/' + userId
@@ -521,14 +522,15 @@ class exports.Client
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
 
-  createMessage: (roomId, message, callback) ->
+  createMessage: (roomId, message, callback) ->    
     path = buildApiPath 'chat/rooms/' + roomId + '/messages'
-    @client.post path, (err, res, body) ->
+    @client.post path, message, (err, res, body) ->
       parseReplyData err, body, callback
 
-  updateMessage: (roomId, messageId, message, callback) ->
+  updateMessage: (roomId, messageId, message, callback) ->    
     path = buildApiPath 'chat/rooms/' + roomId + '/messages/' + messageId
     @client.patch path, (err, res, body) ->
+      console.log res
       parseReplyData err, body, callback
 
   deleteMessage: (roomId, messageId, callback) ->
@@ -975,6 +977,21 @@ class exports.Client
     path = buildApiPath url
     @client.get path, (err, res, body) ->
       parseReplyData err, body, callback
+
+  #########################################
+  # Builds
+  #########################################
+
+  getBuildDefinitions: (callback) ->
+    path= buildApiPath 'build/definitions'
+    @client.get path, (err,res,body) ->
+      parseReplyData err, body, callback
+
+  queueBuild: (buildRequest, callback) ->
+    path = buildApiPath 'build/requests'
+    @client.post path, buildRequest, (err, res, body) ->
+      parseReplyData err, body, callback
+
 
   #########################################
   # Service Hooks

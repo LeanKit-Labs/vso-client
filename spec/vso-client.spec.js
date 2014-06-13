@@ -48,6 +48,35 @@ describe('VSO Client Tests', function(){
     field.field.name.should.equal('Rev');
   } );
 
+  describe('Build tests', function(){
+    
+
+    it('should return a list of build definitions', function() {
+      client.getBuildDefinitions(function(err, builds){      
+        should.not.exist(err);
+        should.exist(builds);       
+        builds.length.should.be.above(0);
+        var build = builds[0];
+        build.should.have.property('id');
+        build.should.have.property('name');
+        build.should.have.property('url');            
+        done();
+      });
+    });
+
+    it('should queue a build', function() {        
+      var buildRequest = { definition : {id: 1},  reason: 'Manual', priority: 'Normal'}
+      console.log(buildRequest);
+      client.queueBuild(buildRequest,function(err, buildResponse){             
+        should.not.exist(err);
+        should.exist(buildResponse);        
+        buildResponse.length.should.be.above(0);
+        buildResponse.should.have.property('status')      
+        done();
+      });
+    });
+  })
+
   describe('Project tests', function() {
     var testProject = null,
         testCollection = null,
