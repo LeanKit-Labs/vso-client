@@ -23,7 +23,11 @@ Features:
 
     npm install vso-client
 
-### Client usage
+### Client usage 
+
+You can call Visual Studio Online, using either alternate credentials or OAuth 2.0
+
+#### Alternate Credentials
 
     var vso = require('vso-client');
     var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd');
@@ -35,6 +39,45 @@ Features:
         console.log(projects);
       }
     });
+
+#### OAuth
+
+In order to use OAuth again Visual Studio Online, you must follow the steps described in [Authorize access with OAuth 2.0](http://www.visualstudio.com/integrate/get-started/get-started-auth-oauth2-vsi)
+
+After you have configured OAuth for your application and you got permission from the user, you can use vso-client to get a an access token or renew it.
+
+In order to get and renew the users access you can use the methods getToken and refreshToken
+
+    var vso = require('vso-client');
+
+    vso.getToken ('clientAssertion', 'assertion', 'redirectUri', function(err, response) {
+        if(err) {
+            console.log(err);
+        } else {
+            if (typeof (body.Error) !== "undefined") {
+               console.log("No token. Returned message was" + response);
+            } else {
+               console.log("Received Token " + body.access_token)   
+            }
+        } 
+    }
+
+After you get the token (notice you are responsable for checking the token validity and renew if it has expired) you are 
+now able to call VSO using the token
+
+    var vso = require('vso-client');
+    var client = vso.createOAuthClient('url', 'collection', 'access token');
+
+    client.getProjects(function(err, projects) {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log(projects);
+      }
+    });
+
+
+
 
 ## API Reference
 
