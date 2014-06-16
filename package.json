@@ -20,6 +20,7 @@
   "dependencies": {
     "lodash": "~2.4.1",
     "request-json": "~0.4.10"
+    "request:" "~2.36.0"
   },
   "bugs": {
     "url": "https://github.com/reverentgeek/vso-node-client/issues",
