@@ -22,18 +22,26 @@ describe('VSO Client Tests', function(){
 
   before(function(done){
     client = Client.createClient(url, collection, username, password);
+    clientOAuth = Client.createOAuthClient(url, collection, "dummyAccessToken");
     done();
   } );
 
-  it ( 'should have a valid client', function() {
+  it ( 'should have a credential valid client', function() {
     should.exist(client);
     client.should.have.property('url');
-    client.should.have.property('username');
-    client.should.have.property('password');
-    client.username.should.not.equal('your-username');
-    client.password.should.not.equal('your-password');
+    client.should.have.property('_authType');
+    client._authType.should.equal('Credential');
     should.exist(client.client)
-  } );
+  });
+
+  it ('should have a OAuth valid client', function () {
+      should.exist(client);
+      clientOAuth.should.have.property('url');
+      clientOAuth.should.have.property('_authType');
+      clientOAuth._authType.should.equal('OAuth');
+      should.exist(client.client)
+  });
+
 
   it ( 'should return a field by name', function() {
     var field = client.findItemField(fields, 'System.Rev');

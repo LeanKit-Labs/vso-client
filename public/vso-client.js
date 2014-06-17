@@ -1,10 +1,14 @@
-var apiVersion, buildApiPath, parseReplyData, request, _;
+var AuthenticationCredential, AuthenticationOAuth, apiVersion, buildApiPath, parseReplyData, request, requestJson, requestToken, vsoTokenUri, _;
 
 _ = require('lodash');
 
-request = require('request-json');
+requestJson = require('request-json');
+
+request = require("request");
 
 apiVersion = '1.0-preview';
+
+vsoTokenUri = 'https://app.vssps.visualstudio.com/oauth2/token';
 
 parseReplyData = function(error, body, callback) {
   var err;
@@ -38,21 +42,86 @@ buildApiPath = function(path, params) {
   return returnPath;
 };
 
-exports.createClient = function(url, collection, username, password) {
-  return new exports.Client(url, collection, username, password);
+requestToken = function(clientAssertion, assertion, grantType, redirectUri, callback, tokenUri) {
+  return request.post(tokenUri, {
+    form: {
+      "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      "client_assertion": clientAssertion,
+      "response_type": "Assertion",
+      "grant_type": grantType,
+      "assertion": assertion,
+      "redirect_uri": redirectUri
+    }
+  }, function(err, res, body) {
+    console.log("===================== " + res.statusCode);
+    if (err) {
+      return callback(err, body);
+    } else if (res.statusCode !== 200 && res.statusCode !== 400 && res.statusCode !== 401) {
+      return callback("Error Code " + res.statusCode, body);
+    } else {
+      return callback(err, JSON.parse(body));
+    }
+  });
 };
 
+exports.createClient = function(url, collection, username, password) {
+  return new exports.Client(url, collection, new AuthenticationCredential(username, password));
+};
+
+exports.createOAuthClient = function(url, collection, accessToken) {
+  return new exports.Client(url, collection, new AuthenticationOAuth(accessToken));
+};
+
+exports.getToken = function(clientAssertion, assertion, redirectUri, callback, tokenUri) {
+  if (tokenUri == null) {
+    tokenUri = vsoTokenUri;
+  }
+  return requestToken(clientAssertion, assertion, "urn:ietf:params:oauth:grant-type:jwt-bearer", redirectUri, callback, tokenUri);
+};
+
+exports.refreshToken = function(clientAssertion, assertion, redirectUri, callback, tokenUri) {
+  if (tokenUri == null) {
+    tokenUri = vsoTokenUri;
+  }
+  return requestToken(clientAssertion, assertion, "refresh_token", redirectUri, callback, tokenUri);
+};
+
+AuthenticationCredential = (function() {
+  function AuthenticationCredential(username, password) {
+    this.username = username;
+    this.password = password;
+    this.type = "Credential";
+  }
+
+  return AuthenticationCredential;
+
+})();
+
+AuthenticationOAuth = (function() {
+  function AuthenticationOAuth(accessToken) {
+    this.accessToken = accessToken;
+    this.type = "OAuth";
+  }
+
+  return AuthenticationOAuth;
+
+})();
+
 exports.Client = (function() {
-  function Client(url, collection, username, password) {
+  function Client(url, collection, authentication) {
     var apiUrl;
     this.url = url;
     this.collection = collection;
-    this.username = username;
-    this.password = password;
     apiUrl = url + '/' + collection + '/_apis/';
-    this.client = request.newClient(apiUrl);
-    this.client.setBasicAuth(this.username, this.password);
-    this.apiVersion = '1.0-preview';
+    this.client = requestJson.newClient(apiUrl);
+    if (authentication === AuthenticationCredential || authentication.type === "Credential") {
+      this.client.setBasicAuth(authentication.username, authentication.password);
+    } else if (authentication === AuthenticationOAuth || authentication.type === "OAuth") {
+      this.client.headers.Authorization = "bearer " + authentication.accessToken;
+    } else {
+      throw "unknown authentication type";
+    }
+    this._authType = authentication.type;
   }
 
   Client.prototype.findItemField = function(fields, fieldName) {
@@ -74,6 +143,13 @@ exports.Client = (function() {
       }
     }
     return field;
+  };
+
+  Client.prototype.setAccessToken = function(acessToken) {
+    if (this._authType !== "OAuth") {
+      throw "can only set access token for OAuth client";
+    }
+    return this.client.headers.Authorization = "bearer " + acessToken;
   };
 
   Client.prototype.getProjects = function(includeCapabilities, stateFilter, pageSize, skip, callback) {
