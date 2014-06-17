@@ -23,11 +23,13 @@ Features:
 
     npm install vso-client
 
-### Client usage 
+### Client usage
 
-You can call Visual Studio Online, using either alternate credentials or OAuth 2.0
+You can authenticate with Visual Studio Online using [basic authentication](http://www.visualstudio.com/integrate/get-started/get-started-auth-introduction-vsi) or [OAuth 2.0](http://www.visualstudio.com/integrate/get-started/get-started-auth-oauth2-vsi).
 
-#### Alternate Credentials
+#### Basic Authentication
+
+You must first enable [alternate credentials](http://www.visualstudio.com/integrate/get-started/get-started-auth-introduction-vsi) on your profile.
 
     var vso = require('vso-client');
     var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd');
@@ -40,13 +42,15 @@ You can call Visual Studio Online, using either alternate credentials or OAuth 2
       }
     });
 
-#### OAuth
+#### OAuth 2.0
 
-In order to use OAuth again Visual Studio Online, you must follow the steps described in [Authorize access with OAuth 2.0](http://www.visualstudio.com/integrate/get-started/get-started-auth-oauth2-vsi)
+**Step 1: Authorize application**
 
-After you have configured OAuth for your application and you got permission from the user, you can use vso-client to get a an access token or renew it.
+To use OAuth 2.0, you must follow the steps described in [Authorize access with OAuth 2.0](http://www.visualstudio.com/integrate/get-started/get-started-auth-oauth2-vsi).
 
-In order to get and renew the users access you can use the methods getToken and refreshToken
+**Step 2: Request access token**
+
+Use the vso-client to request or renew an access token.
 
     var vso = require('vso-client');
 
@@ -55,17 +59,17 @@ In order to get and renew the users access you can use the methods getToken and 
             console.log(err);
         } else {
             if (typeof (body.Error) !== "undefined") {
-               console.log("No token. Returned message was" + response);
+               console.log("No token. Returned message was: " + response);
             } else {
-               console.log("Received Token " + body.access_token)   
+               console.log("Received Token: " + body.access_token)
             }
-        } 
+        }
     }
 
-After you get the token (notice you are responsable for checking the token validity and renew if it has expired) you are 
-now able to call VSO using the token
+Note: Use `refreshToken` to renew an existing access token.
 
-    var vso = require('vso-client');
+**Step 3: Initialize client with access token**
+
     var client = vso.createOAuthClient('url', 'collection', 'access token');
 
     client.getProjects(function(err, projects) {
@@ -75,9 +79,6 @@ now able to call VSO using the token
         console.log(projects);
       }
     });
-
-
-
 
 ## API Reference
 

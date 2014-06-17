@@ -1,6 +1,6 @@
 {
   "name": "vso-client",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "Visual Studio Online Client",
   "main": "./public/vso-client.js",
   "scripts": {
