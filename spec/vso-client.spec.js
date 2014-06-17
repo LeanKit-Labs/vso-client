@@ -30,7 +30,7 @@ describe('VSO Client Tests', function(){
     should.exist(client);
     client.should.have.property('url');
     client.should.have.property('_authType');
-    client._authType.should.not.equal('Credential');
+    client._authType.should.equal('Credential');
     should.exist(client.client)
   });
 
@@ -38,7 +38,7 @@ describe('VSO Client Tests', function(){
       should.exist(client);
       clientOAuth.should.have.property('url');
       clientOAuth.should.have.property('_authType');
-      clientOAuth._authType.should.not.equal('OAuth');
+      clientOAuth._authType.should.equal('OAuth');
       should.exist(client.client)
   });
 
