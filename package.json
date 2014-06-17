@@ -1,6 +1,6 @@
 {
   "name": "vso-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Visual Studio Online Client",
   "main": "./public/vso-client.js",
   "scripts": {
@@ -23,12 +23,12 @@
     "request": "~2.36.0"
   },
   "bugs": {
-    "url": "https://github.com/reverentgeek/vso-node-client/issues",
+    "url": "https://github.com/LeanKit-Labs/vso-client/issues",
     "email": "david@reverentgeek.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/reverentgeek/vso-node-client"
+    "url": "https://github.com/LeanKit-Labs/vso-client"
   },
   "keywords": [ "tfs", "visualstudio", "visualstudioonline" ]
 }
