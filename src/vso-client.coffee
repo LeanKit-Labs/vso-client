@@ -50,7 +50,6 @@ requestToken = (clientAssertion, assertion, grantType, redirectUri, callback, to
             "redirect_uri" : redirectUri
         }
     }, (err,res,body) ->
-      console.log("===================== " + res.statusCode)
       if (err)
           callback err, body
       else if (res.statusCode != 200 and res.statusCode != 400 and res.statusCode != 401)
