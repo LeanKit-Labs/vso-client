@@ -58,10 +58,10 @@ Use the vso-client to request or renew an access token.
         if(err) {
             console.log(err);
         } else {
-            if (typeof (body.Error) !== "undefined") {
+            if (typeof (response.Error) !== "undefined") {
                console.log("No token. Returned message was: " + response);
             } else {
-               console.log("Received Token: " + body.access_token)
+               console.log("Received Token: " + response.access_token)
             }
         }
     }

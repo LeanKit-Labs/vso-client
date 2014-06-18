@@ -53,7 +53,6 @@ requestToken = function(clientAssertion, assertion, grantType, redirectUri, call
       "redirect_uri": redirectUri
     }
   }, function(err, res, body) {
-    console.log("===================== " + res.statusCode);
     if (err) {
       return callback(err, body);
     } else if (res.statusCode !== 200 && res.statusCode !== 400 && res.statusCode !== 401) {
