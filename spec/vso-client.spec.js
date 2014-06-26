@@ -44,6 +44,12 @@ describe('VSO Client Tests', function(){
       should.exist(clientOAuth.clientSPS)
   });
 
+  it('should have overriden version', function () {
+      var version = "1.0-preview-unitTest"
+      clientWithVersion = Client.createClient(url, collection, username, password, { apiVersion: version } );
+
+      clientWithVersion.apiVersion.should.equal(version);      
+  });
 
   it ( 'should return a field by name', function() {
     var field = client.findItemField(fields, 'System.Rev');

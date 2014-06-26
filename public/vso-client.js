@@ -1,4 +1,4 @@
-var AuthenticationCredential, AuthenticationOAuth, apiVersion, buildApiPath, parseReplyData, request, requestJson, requestToken, spsUri, vsoTokenUri, _;
+var AuthenticationCredential, AuthenticationOAuth, apiVersion, parseReplyData, request, requestJson, requestToken, spsUri, vsoTokenUri, _;
 
 _ = require('lodash');
 
@@ -35,15 +35,6 @@ parseReplyData = function(error, body, callback) {
   }
 };
 
-buildApiPath = function(path, params) {
-  var returnPath;
-  returnPath = path + '?api-version=' + apiVersion;
-  if (params && params.length > 0) {
-    returnPath += '&' + params;
-  }
-  return returnPath;
-};
-
 requestToken = function(clientAssertion, assertion, grantType, redirectUri, callback, tokenUri) {
   return request.post(tokenUri, {
     form: {
@@ -65,12 +56,12 @@ requestToken = function(clientAssertion, assertion, grantType, redirectUri, call
   });
 };
 
-exports.createClient = function(url, collection, username, password) {
-  return new exports.Client(url, collection, new AuthenticationCredential(username, password));
+exports.createClient = function(url, collection, username, password, options) {
+  return new exports.Client(url, collection, new AuthenticationCredential(username, password), options);
 };
 
-exports.createOAuthClient = function(url, collection, accessToken) {
-  return new exports.Client(url, collection, new AuthenticationOAuth(accessToken));
+exports.createOAuthClient = function(url, collection, accessToken, options) {
+  return new exports.Client(url, collection, new AuthenticationOAuth(accessToken), options);
 };
 
 exports.getToken = function(clientAssertion, assertion, redirectUri, callback, tokenUri) {
@@ -109,7 +100,7 @@ AuthenticationOAuth = (function() {
 })();
 
 exports.Client = (function() {
-  function Client(url, collection, authentication) {
+  function Client(url, collection, authentication, options) {
     var apiUrl, spsUrl;
     this.url = url;
     this.collection = collection;
@@ -118,7 +109,7 @@ exports.Client = (function() {
     if (authentication === AuthenticationCredential || authentication.type === "Credential") {
       this.client.setBasicAuth(authentication.username, authentication.password);
     } else if (authentication === AuthenticationOAuth || authentication.type === "OAuth") {
-      spsUrl = spsUri + '/_apis/';
+      spsUrl = ((options != null ? options.spsUri : void 0) || spsUri) + '/_apis/';
       this.clientSPS = requestJson.newClient(spsUrl);
       this.client.headers.Authorization = "bearer " + authentication.accessToken;
       this.clientSPS.headers.Authorization = "bearer " + authentication.accessToken;
@@ -126,6 +117,7 @@ exports.Client = (function() {
       throw "unknown authentication type";
     }
     this._authType = authentication.type;
+    this.apiVersion = (options != null ? options.apiVersion : void 0) || apiVersion;
   }
 
   Client.prototype.findItemField = function(fields, fieldName) {
@@ -156,10 +148,23 @@ exports.Client = (function() {
     return this.client.headers.Authorization = "bearer " + acessToken;
   };
 
+  Client.prototype.setVersion = function(version) {
+    return this.apiVersion = version;
+  };
+
   Client.prototype.checkAndRequireOAuth = function(methodName) {
     if (this._authType !== "OAuth") {
       throw methodName + " can only be invoked with OAuth";
     }
+  };
+
+  Client.prototype.buildApiPath = function(path, params) {
+    var returnPath;
+    returnPath = path + '?api-version=' + this.apiVersion;
+    if (params && params.length > 0) {
+      returnPath += '&' + params;
+    }
+    return returnPath;
   };
 
   Client.prototype.getProjects = function(includeCapabilities, stateFilter, pageSize, skip, callback) {
@@ -181,7 +186,7 @@ exports.Client = (function() {
     skip = skip != null ? skip : 0;
     stateFilter = stateFilter != null ? stateFilter : 'WellFormed';
     includeCapabilities = includeCapabilities != null ? includeCapabilities : false;
-    path = buildApiPath('projects', 'stateFilter=' + stateFilter + '&includeCapabilities=' + includeCapabilities + '&$top=' + pageSize + "&$skip=" + skip);
+    path = this.buildApiPath('projects', 'stateFilter=' + stateFilter + '&includeCapabilities=' + includeCapabilities + '&$top=' + pageSize + "&$skip=" + skip);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -194,7 +199,7 @@ exports.Client = (function() {
       includeCapabilities = false;
     }
     includeCapabilities = includeCapabilities != null ? includeCapabilities : false;
-    path = buildApiPath('projects/' + projectId, 'includeCapabilities=' + includeCapabilities);
+    path = this.buildApiPath('projects/' + projectId, 'includeCapabilities=' + includeCapabilities);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -211,7 +216,7 @@ exports.Client = (function() {
     }
     pageSize = pageSize != null ? pageSize : 100;
     skip = skip != null ? skip : 0;
-    path = buildApiPath('projectcollections', '$top=' + pageSize + "&$skip=" + skip);
+    path = this.buildApiPath('projectcollections', '$top=' + pageSize + "&$skip=" + skip);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -219,7 +224,7 @@ exports.Client = (function() {
 
   Client.prototype.getProjectCollection = function(collectionId, callback) {
     var path;
-    path = buildApiPath('projectcollections/' + collectionId);
+    path = this.buildApiPath('projectcollections/' + collectionId);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -236,7 +241,7 @@ exports.Client = (function() {
     }
     pageSize = pageSize != null ? pageSize : 100;
     skip = skip != null ? skip : 0;
-    path = buildApiPath('projects/' + projectId + '/teams', '$top=' + pageSize + '&$skip=' + skip);
+    path = this.buildApiPath('projects/' + projectId + '/teams', '$top=' + pageSize + '&$skip=' + skip);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -244,7 +249,7 @@ exports.Client = (function() {
 
   Client.prototype.getTeam = function(projectId, teamId, callback) {
     var path;
-    path = buildApiPath('projects/' + projectId + '/teams/' + teamId);
+    path = this.buildApiPath('projects/' + projectId + '/teams/' + teamId);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -261,7 +266,7 @@ exports.Client = (function() {
     }
     pageSize = pageSize != null ? pageSize : 100;
     skip = skip != null ? skip : 0;
-    path = buildApiPath('projects/' + projectId + '/teams/' + teamId + '/members', '$top=' + pageSize + '&$skip=' + skip);
+    path = this.buildApiPath('projects/' + projectId + '/teams/' + teamId + '/members', '$top=' + pageSize + '&$skip=' + skip);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -273,7 +278,7 @@ exports.Client = (function() {
       callback = includeInactive;
       includeInactive = false;
     }
-    path = buildApiPath('tagging/scopes/' + scope + '/tags', 'includeinactive=' + includeInactive);
+    path = this.buildApiPath('tagging/scopes/' + scope + '/tags', 'includeinactive=' + includeInactive);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -282,7 +287,7 @@ exports.Client = (function() {
   Client.prototype.getTag = function(scope, tag, callback) {
     var path, tagId;
     tagId = encodeURI(tag);
-    path = buildApiPath('tagging/scopes/' + scope + '/tags/' + tagId);
+    path = this.buildApiPath('tagging/scopes/' + scope + '/tags/' + tagId);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -293,7 +298,7 @@ exports.Client = (function() {
     tag = {
       name: name
     };
-    path = buildApiPath('tagging/scopes/' + scope + '/tags');
+    path = this.buildApiPath('tagging/scopes/' + scope + '/tags');
     return this.client.post(path, tag, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -305,7 +310,7 @@ exports.Client = (function() {
       name: name,
       active: active
     };
-    path = buildApiPath('tagging/scopes/' + scope + '/tags/' + tagId);
+    path = this.buildApiPath('tagging/scopes/' + scope + '/tags/' + tagId);
     return this.client.patch(path, tag, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -314,7 +319,7 @@ exports.Client = (function() {
   Client.prototype.deleteTag = function(scope, tag, callback) {
     var path, tagId;
     tagId = encodeURI(tag);
-    path = buildApiPath('tagging/scopes/' + scope + '/tags/' + tagId);
+    path = this.buildApiPath('tagging/scopes/' + scope + '/tags/' + tagId);
     return this.client.del(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -334,7 +339,7 @@ exports.Client = (function() {
       projectName = encodeURI(projectName);
       params = '@project=' + projectName;
     }
-    path = buildApiPath('wit/queryresults', params);
+    path = this.buildApiPath('wit/queryresults', params);
     return this.client.post(path, query, function(err, res, body) {
       return parseReplyData(err, body, function(err, results) {
         var ids;
@@ -362,7 +367,7 @@ exports.Client = (function() {
       projectName = encodeURI(projectName);
       params = '@project=' + projectName;
     }
-    path = buildApiPath('wit/queryresults', params);
+    path = this.buildApiPath('wit/queryresults', params);
     return this.client.post(path, query, function(err, res, body) {
       return parseReplyData(err, body, function(err, results) {
         var ids;
@@ -404,7 +409,7 @@ exports.Client = (function() {
     if (expand) {
       params += '&$expand=' + expand;
     }
-    path = buildApiPath('wit/workitems', params);
+    path = this.buildApiPath('wit/workitems', params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -420,7 +425,7 @@ exports.Client = (function() {
     if (expand) {
       params = '$expand=' + expand;
     }
-    path = buildApiPath('wit/workitems/' + id, params);
+    path = this.buildApiPath('wit/workitems/' + id, params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -428,7 +433,7 @@ exports.Client = (function() {
 
   Client.prototype.createWorkItem = function(item, callback) {
     var path;
-    path = buildApiPath('wit/workitems');
+    path = this.buildApiPath('wit/workitems');
     return this.client.post(path, item, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -436,7 +441,7 @@ exports.Client = (function() {
 
   Client.prototype.updateWorkItem = function(id, item, callback) {
     var path;
-    path = buildApiPath('wit/workitems/' + id);
+    path = this.buildApiPath('wit/workitems/' + id);
     return this.client.patch(path, item, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -444,7 +449,7 @@ exports.Client = (function() {
 
   Client.prototype.updateWorkItems = function(items, callback) {
     var path;
-    path = buildApiPath('wit/workitems');
+    path = this.buildApiPath('wit/workitems');
     return this.client.patch(path, item, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -461,7 +466,7 @@ exports.Client = (function() {
     }
     pageSize = pageSize != null ? pageSize : 100;
     skip = skip != null ? skip : 0;
-    path = buildApiPath('wit/workitems/' + id + '/updates', '$top=' + pageSize + '&$skip=' + skip);
+    path = this.buildApiPath('wit/workitems/' + id + '/updates', '$top=' + pageSize + '&$skip=' + skip);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -469,7 +474,7 @@ exports.Client = (function() {
 
   Client.prototype.getWorkItemUpdate = function(id, rev, callback) {
     var path;
-    path = buildApiPath('wit/workitems/' + id + '/updates/' + rev);
+    path = this.buildApiPath('wit/workitems/' + id + '/updates/' + rev);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -477,7 +482,7 @@ exports.Client = (function() {
 
   Client.prototype.getWorkItemRevision = function(id, rev, callback) {
     var path;
-    path = buildApiPath('wit/workitems/' + id + '/revisions/' + rev);
+    path = this.buildApiPath('wit/workitems/' + id + '/revisions/' + rev);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -488,7 +493,7 @@ exports.Client = (function() {
     params = 'project=' + encodeURI(project);
     params += '&area=' + encodeURI(areaPath);
     params += '&filename=' + encodeURI(fileName);
-    path = buildApiPath('wit/attachments', params);
+    path = this.buildApiPath('wit/attachments', params);
     return this.client.post(path, file, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -508,7 +513,7 @@ exports.Client = (function() {
         }
       ]
     };
-    path = buildApiPath('wit/workitems/' + id);
+    path = this.buildApiPath('wit/workitems/' + id);
     return this.client.patch(path, item, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -530,7 +535,7 @@ exports.Client = (function() {
     if (expand) {
       params += '&$expand=' + expand;
     }
-    path = buildApiPath('wit/queries', params);
+    path = this.buildApiPath('wit/queries', params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -552,7 +557,7 @@ exports.Client = (function() {
     if (expand) {
       params += '&$expand=' + expand;
     }
-    path = buildApiPath('wit/queries/' + queryOrFolderId, params);
+    path = this.buildApiPath('wit/queries/' + queryOrFolderId, params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -565,7 +570,7 @@ exports.Client = (function() {
       parentId: folderId,
       wiql: wiql
     };
-    path = buildApiPath('wit/queries');
+    path = this.buildApiPath('wit/queries');
     return this.client.post(path, query, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -579,7 +584,7 @@ exports.Client = (function() {
       parentId: folderId,
       wiql: wiql
     };
-    path = buildApiPath('wit/queries/' + queryId);
+    path = this.buildApiPath('wit/queries/' + queryId);
     return this.client.patch(path, query, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -592,7 +597,7 @@ exports.Client = (function() {
       parentId: parentFolderId,
       type: 'folder'
     };
-    path = buildApiPath('wit/queries');
+    path = this.buildApiPath('wit/queries');
     return this.client.post(path, folder, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -600,7 +605,7 @@ exports.Client = (function() {
 
   Client.prototype.deleteQuery = function(queryId, callback) {
     var path;
-    path = buildApiPath('wit/queries/' + queryId);
+    path = this.buildApiPath('wit/queries/' + queryId);
     return this.client.del(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -613,7 +618,7 @@ exports.Client = (function() {
   Client.prototype.getCurrentProfile = function(callback) {
     var path;
     this.checkAndRequireOAuth("getCurrentProfile");
-    path = buildApiPath('profile/profiles/me');
+    path = this.buildApiPath('profile/profiles/me');
     return this.clientSPS.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -621,7 +626,7 @@ exports.Client = (function() {
 
   Client.prototype.getRooms = function(callback) {
     var path;
-    path = buildApiPath('chat/rooms');
+    path = this.buildApiPath('chat/rooms');
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -629,7 +634,7 @@ exports.Client = (function() {
 
   Client.prototype.getRoom = function(roomId, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId);
+    path = this.buildApiPath('chat/rooms/' + roomId);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -637,7 +642,7 @@ exports.Client = (function() {
 
   Client.prototype.createRoom = function(name, description, callback) {
     var path, room;
-    path = buildApiPath('chat/rooms');
+    path = this.buildApiPath('chat/rooms');
     room = {
       name: name,
       description: description
@@ -649,7 +654,7 @@ exports.Client = (function() {
 
   Client.prototype.updateRoom = function(roomId, name, description, callback) {
     var path, room;
-    path = buildApiPath('chat/rooms/' + roomId);
+    path = this.buildApiPath('chat/rooms/' + roomId);
     room = {
       name: name,
       description: description
@@ -661,7 +666,7 @@ exports.Client = (function() {
 
   Client.prototype.deleteRoom = function(roomId, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId);
+    path = this.buildApiPath('chat/rooms/' + roomId);
     return this.client.del(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -669,7 +674,7 @@ exports.Client = (function() {
 
   Client.prototype.getRoomUsers = function(roomId, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/users');
+    path = this.buildApiPath('chat/rooms/' + roomId + '/users');
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -677,7 +682,7 @@ exports.Client = (function() {
 
   Client.prototype.getRoomUser = function(roomId, userId, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/users/' + userId);
+    path = this.buildApiPath('chat/rooms/' + roomId + '/users/' + userId);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -685,7 +690,7 @@ exports.Client = (function() {
 
   Client.prototype.joinRoom = function(roomId, userId, userGuid, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/users/' + userGuid);
+    path = this.buildApiPath('chat/rooms/' + roomId + '/users/' + userGuid);
     return this.client.put(path, userId, function(err, res, body) {
       return callback(err, res.statusCode);
     });
@@ -693,7 +698,7 @@ exports.Client = (function() {
 
   Client.prototype.leaveRoom = function(roomId, userId, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/users/' + userId);
+    path = this.buildApiPath('chat/rooms/' + roomId + '/users/' + userId);
     return this.client.del(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -718,7 +723,7 @@ exports.Client = (function() {
         params += 'postedtime lt ' + endDate;
       }
     }
-    path = buildApiPath('chat/rooms/' + roomId + '/messages', params);
+    path = this.buildApiPath('chat/rooms/' + roomId + '/messages', params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -726,7 +731,7 @@ exports.Client = (function() {
 
   Client.prototype.getMessage = function(roomId, messageId, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/messages/' + messageId);
+    path = this.buildApiPath('chat/rooms/' + roomId + '/messages/' + messageId);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -734,7 +739,7 @@ exports.Client = (function() {
 
   Client.prototype.createMessage = function(roomId, message, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/messages');
+    path = this.buildApiPath('chat/rooms/' + roomId + '/messages');
     return this.client.post(path, message, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -742,7 +747,7 @@ exports.Client = (function() {
 
   Client.prototype.updateMessage = function(roomId, messageId, message, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/messages/' + messageId);
+    path = this.buildApiPath('chat/rooms/' + roomId + '/messages/' + messageId);
     return this.client.patch(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -750,7 +755,7 @@ exports.Client = (function() {
 
   Client.prototype.deleteMessage = function(roomId, messageId, callback) {
     var path;
-    path = buildApiPath('chat/rooms/' + roomId + '/messages/' + messageId);
+    path = this.buildApiPath('chat/rooms/' + roomId + '/messages/' + messageId);
     return this.client.del(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -774,7 +779,7 @@ exports.Client = (function() {
       params.push("includedeleted=true");
     }
     p = params.join('&');
-    path = buildApiPath('tfvc/branches', p);
+    path = this.buildApiPath('tfvc/branches', p);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -805,7 +810,7 @@ exports.Client = (function() {
       params.push("includedeleted=true");
     }
     p = params.join('&');
-    path = buildApiPath('tfvc/branches/' + path, p);
+    path = this.buildApiPath('tfvc/branches/' + path, p);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -840,7 +845,7 @@ exports.Client = (function() {
     params.push('$top=' + pageSize);
     params.push('$skip=' + skip);
     p = params.join('&');
-    path = buildApiPath('tfvc/shelvesets', p);
+    path = this.buildApiPath('tfvc/shelvesets', p);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -895,7 +900,7 @@ exports.Client = (function() {
       }
     }
     p = params.join('&');
-    path = buildApiPath('tfvc/changesets', p);
+    path = this.buildApiPath('tfvc/changesets', p);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -923,7 +928,7 @@ exports.Client = (function() {
       }
     }
     p = params.join('&');
-    path = buildApiPath('tfvc/changesets/' + changesetId, p);
+    path = this.buildApiPath('tfvc/changesets/' + changesetId, p);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -949,7 +954,7 @@ exports.Client = (function() {
       }
     }
     p = params.join('&');
-    path = buildApiPath(url, p);
+    path = this.buildApiPath(url, p);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -975,7 +980,7 @@ exports.Client = (function() {
       }
     }
     p = params.join('&');
-    path = buildApiPath(url, p);
+    path = this.buildApiPath(url, p);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1006,7 +1011,7 @@ exports.Client = (function() {
       }
     }
     p = params.join('&');
-    path = buildApiPath('tfvc/labels', p);
+    path = this.buildApiPath('tfvc/labels', p);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1019,7 +1024,7 @@ exports.Client = (function() {
       maxItemCount = null;
     }
     params = (_ref = 'maxitemcount=' + maxItemCount) != null ? _ref : '';
-    path = buildApiPath('tfvc/labels/' + labelId, params);
+    path = this.buildApiPath('tfvc/labels/' + labelId, params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1038,7 +1043,7 @@ exports.Client = (function() {
     pageSize = pageSize != null ? pageSize : 100;
     skip = skip != null ? skip : 0;
     params = '$top=' + pageSize + '&$skip=' + skip;
-    path = buildApiPath('tfvc/labels/' + labelId + '/items', params);
+    path = this.buildApiPath('tfvc/labels/' + labelId + '/items', params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1052,9 +1057,9 @@ exports.Client = (function() {
       projectId = null;
     }
     if (projectId) {
-      path = buildApiPath('git/' + projectId + '/repositories');
+      path = this.buildApiPath('git/' + projectId + '/repositories');
     } else {
-      path = buildApiPath('git/repositories');
+      path = this.buildApiPath('git/repositories');
     }
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
@@ -1070,9 +1075,9 @@ exports.Client = (function() {
     }
     repo = encodeURI(repositoryIdOrName);
     if (projectId) {
-      path = buildApiPath('git/' + projectId + '/repositories/' + repo);
+      path = this.buildApiPath('git/' + projectId + '/repositories/' + repo);
     } else {
-      path = buildApiPath('git/repositories/' + repo);
+      path = this.buildApiPath('git/repositories/' + repo);
     }
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
@@ -1087,7 +1092,7 @@ exports.Client = (function() {
         id: projectId
       }
     };
-    path = buildApiPath('git/repositories');
+    path = this.buildApiPath('git/repositories');
     return this.client.post(path, repo, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1099,7 +1104,7 @@ exports.Client = (function() {
       id: repositoryId,
       name: name
     };
-    path = buildApiPath('git/repositories/' + repositoryId);
+    path = this.buildApiPath('git/repositories/' + repositoryId);
     return this.client.patch(path, repo, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1107,7 +1112,7 @@ exports.Client = (function() {
 
   Client.prototype.deleteRepository = function(repositoryId, callback) {
     var path;
-    path = buildApiPath('git/repositories/' + repositoryId);
+    path = this.buildApiPath('git/repositories/' + repositoryId);
     return this.client.del(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1155,7 +1160,7 @@ exports.Client = (function() {
     if (toDate) {
       params += '&todate=' + toDate;
     }
-    path = buildApiPath('git/repositories/' + repositoryId + '/commits', params);
+    path = this.buildApiPath('git/repositories/' + repositoryId + '/commits', params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1167,7 +1172,7 @@ exports.Client = (function() {
       callback = changeCount;
       changeCount = 0;
     }
-    path = buildApiPath('git/repositories/' + repositoryId + '/commits/' + commitId, 'changeCount=' + changeCount);
+    path = this.buildApiPath('git/repositories/' + repositoryId + '/commits/' + commitId, 'changeCount=' + changeCount);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1209,7 +1214,7 @@ exports.Client = (function() {
     if (targetVersion) {
       params += '&targetversion=' + targetVersion;
     }
-    path = buildApiPath('git/repositories/' + repositoryId + '/diffs/commits', params);
+    path = this.buildApiPath('git/repositories/' + repositoryId + '/diffs/commits', params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1245,7 +1250,7 @@ exports.Client = (function() {
     if (pusherId) {
       params += '&pusherid=' + pusherId;
     }
-    path = buildApiPath('git/repositories/' + repositoryId + '/pushes', params);
+    path = this.buildApiPath('git/repositories/' + repositoryId + '/pushes', params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1274,7 +1279,7 @@ exports.Client = (function() {
     if (branchName) {
       url += '/' + branchName;
     }
-    path = buildApiPath(url, params.join('&'));
+    path = this.buildApiPath(url, params.join('&'));
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1290,7 +1295,7 @@ exports.Client = (function() {
     if (filter) {
       url += '/' + filter;
     }
-    path = buildApiPath(url);
+    path = this.buildApiPath(url);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1298,7 +1303,7 @@ exports.Client = (function() {
 
   Client.prototype.getBuildDefinitions = function(callback) {
     var path;
-    path = buildApiPath('build/definitions');
+    path = this.buildApiPath('build/definitions');
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1306,7 +1311,7 @@ exports.Client = (function() {
 
   Client.prototype.queueBuild = function(buildRequest, callback) {
     var path;
-    path = buildApiPath('build/requests');
+    path = this.buildApiPath('build/requests');
     return this.client.post(path, buildRequest, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1314,7 +1319,7 @@ exports.Client = (function() {
 
   Client.prototype.getPublishers = function(callback) {
     var path;
-    path = buildApiPath('hooks/publishers');
+    path = this.buildApiPath('hooks/publishers');
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1322,7 +1327,7 @@ exports.Client = (function() {
 
   Client.prototype.getConsumers = function(callback) {
     var path;
-    path = buildApiPath('hooks/consumers');
+    path = this.buildApiPath('hooks/consumers');
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1330,7 +1335,7 @@ exports.Client = (function() {
 
   Client.prototype.getConsumer = function(consumerId, callback) {
     var path;
-    path = buildApiPath('hooks/consumers/' + consumerId);
+    path = this.buildApiPath('hooks/consumers/' + consumerId);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1338,7 +1343,7 @@ exports.Client = (function() {
 
   Client.prototype.getConsumerActions = function(consumerId, callback) {
     var path;
-    path = buildApiPath('hooks/consumers/' + consumerId + '/actions');
+    path = this.buildApiPath('hooks/consumers/' + consumerId + '/actions');
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1346,7 +1351,7 @@ exports.Client = (function() {
 
   Client.prototype.getConsumerAction = function(consumerId, action, callback) {
     var path;
-    path = buildApiPath('hooks/consumers/' + consumerId + '/actions/' + action);
+    path = this.buildApiPath('hooks/consumers/' + consumerId + '/actions/' + action);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1354,7 +1359,7 @@ exports.Client = (function() {
 
   Client.prototype.getSubscriptions = function(callback) {
     var path;
-    path = buildApiPath('hooks/subscriptions');
+    path = this.buildApiPath('hooks/subscriptions');
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1362,7 +1367,7 @@ exports.Client = (function() {
 
   Client.prototype.createSubscription = function(subscription, callback) {
     var path;
-    path = buildApiPath('hooks/subscriptions');
+    path = this.buildApiPath('hooks/subscriptions');
     return this.client.post(path, subscription, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
@@ -1370,7 +1375,7 @@ exports.Client = (function() {
 
   Client.prototype.querySubscriptions = function(queryOptions, callback) {
     var path;
-    path = buildApiPath('hooks/subscriptionsquery');
+    path = this.buildApiPath('hooks/subscriptionsquery');
     return this.client.post(path, queryOptions, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
