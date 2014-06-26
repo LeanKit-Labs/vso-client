@@ -1,4 +1,4 @@
-var AuthenticationCredential, AuthenticationOAuth, apiVersion, buildApiPath, parseReplyData, request, requestJson, requestToken, vsoTokenUri, _;
+var AuthenticationCredential, AuthenticationOAuth, apiVersion, buildApiPath, parseReplyData, request, requestJson, requestToken, spsUri, vsoTokenUri, _;
 
 _ = require('lodash');
 
@@ -8,7 +8,9 @@ request = require("request");
 
 apiVersion = '1.0-preview';
 
-vsoTokenUri = 'https://app.vssps.visualstudio.com/oauth2/token';
+spsUri = 'https://app.vssps.visualstudio.com';
+
+vsoTokenUri = spsUri + '/oauth2/token';
 
 parseReplyData = function(error, body, callback) {
   var err;
@@ -108,7 +110,7 @@ AuthenticationOAuth = (function() {
 
 exports.Client = (function() {
   function Client(url, collection, authentication) {
-    var apiUrl;
+    var apiUrl, spsUrl;
     this.url = url;
     this.collection = collection;
     apiUrl = url + '/' + collection + '/_apis/';
@@ -116,7 +118,10 @@ exports.Client = (function() {
     if (authentication === AuthenticationCredential || authentication.type === "Credential") {
       this.client.setBasicAuth(authentication.username, authentication.password);
     } else if (authentication === AuthenticationOAuth || authentication.type === "OAuth") {
+      spsUrl = spsUri + '/_apis/';
+      this.clientSPS = requestJson.newClient(spsUrl);
       this.client.headers.Authorization = "bearer " + authentication.accessToken;
+      this.clientSPS.headers.Authorization = "bearer " + authentication.accessToken;
     } else {
       throw "unknown authentication type";
     }
@@ -149,6 +154,12 @@ exports.Client = (function() {
       throw "can only set access token for OAuth client";
     }
     return this.client.headers.Authorization = "bearer " + acessToken;
+  };
+
+  Client.prototype.checkAndRequireOAuth = function(methodName) {
+    if (this._authType !== "OAuth") {
+      throw methodName + " can only be invoked with OAuth";
+    }
   };
 
   Client.prototype.getProjects = function(includeCapabilities, stateFilter, pageSize, skip, callback) {
@@ -601,8 +612,9 @@ exports.Client = (function() {
 
   Client.prototype.getCurrentProfile = function(callback) {
     var path;
+    this.checkAndRequireOAuth("getCurrentProfile");
     path = buildApiPath('profile/profiles/me');
-    return this.client.get(path, function(err, res, body) {
+    return this.clientSPS.get(path, function(err, res, body) {
       return parseReplyData(err, body, callback);
     });
   };
@@ -673,7 +685,6 @@ exports.Client = (function() {
 
   Client.prototype.joinRoom = function(roomId, userId, userGuid, callback) {
     var path;
-    console.log(userId);
     path = buildApiPath('chat/rooms/' + roomId + '/users/' + userGuid);
     return this.client.put(path, userId, function(err, res, body) {
       return callback(err, res.statusCode);
@@ -733,7 +744,6 @@ exports.Client = (function() {
     var path;
     path = buildApiPath('chat/rooms/' + roomId + '/messages/' + messageId);
     return this.client.patch(path, function(err, res, body) {
-      console.log(res);
       return parseReplyData(err, body, callback);
     });
   };

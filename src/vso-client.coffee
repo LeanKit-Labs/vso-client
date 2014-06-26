@@ -4,7 +4,9 @@ request = require "request"
 
 apiVersion = '1.0-preview'
 
-vsoTokenUri = 'https://app.vssps.visualstudio.com/oauth2/token'
+spsUri = 'https://app.vssps.visualstudio.com'
+vsoTokenUri = spsUri + '/oauth2/token'
+
 
 parseReplyData = (error, body, callback) ->
   #console.log body
@@ -36,26 +38,26 @@ buildApiPath = (path, params) ->
     returnPath += '&' + params
   # console.log returnPath
   returnPath
-
+ 
 requestToken = (clientAssertion, assertion, grantType, redirectUri, callback, tokenUri) ->
 
-  request.post tokenUri, {        
-        # proxy: "http://127.0.0.1:8888" ,
-        form : {
-            "client_assertion_type" : "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
-            "client_assertion" : clientAssertion,
-            "response_type" : "Assertion",
-            "grant_type" : grantType,
-            "assertion" : assertion,
-            "redirect_uri" : redirectUri
-        }
+  request.post tokenUri, {
+    # proxy: "http://127.0.0.1:8888" ,
+    form : {
+      "client_assertion_type" : "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+      "client_assertion" : clientAssertion,
+      "response_type" : "Assertion",
+      "grant_type" : grantType,
+      "assertion" : assertion,
+      "redirect_uri" : redirectUri
+      }
     }, (err,res,body) ->
-      if (err)
-          callback err, body
-      else if (res.statusCode != 200 and res.statusCode != 400 and res.statusCode != 401)
-          callback "Error Code " + res.statusCode, body
-      else
-          callback err, JSON.parse body
+    if (err)
+      callback err, body
+    else if (res.statusCode != 200 and res.statusCode != 400 and res.statusCode != 401)
+      callback "Error Code " + res.statusCode, body
+    else
+      callback err, JSON.parse body
 
 exports.createClient = (url, collection, username, password) -> new exports.Client url, collection, (new AuthenticationCredential  username, password)
 exports.createOAuthClient = (url, collection, accessToken) -> new exports.Client url, collection, (new  AuthenticationOAuth accessToken)
@@ -65,22 +67,25 @@ exports.refreshToken = (clientAssertion, assertion, redirectUri, callback, token
 
 class AuthenticationCredential
   constructor: (@username, @password) ->
-        @type = "Credential"
+    @type = "Credential"
 
 class AuthenticationOAuth
   constructor: (@accessToken) ->
-        @type = "OAuth"
-	
+    @type = "OAuth"
+
 class exports.Client
   constructor: (@url, @collection, authentication) ->
     apiUrl = url + '/' + collection + '/_apis/'
-    @client = requestJson.newClient(apiUrl)
-    if (authentication is AuthenticationCredential || authentication.type == "Credential") 
-        @client.setBasicAuth authentication.username, authentication.password 
-    else  if (authentication is AuthenticationOAuth || authentication.type == "OAuth") 
-        @client.headers.Authorization = "bearer " + authentication.accessToken
+    @client = requestJson.newClient(apiUrl)    
+    if (authentication is AuthenticationCredential || authentication.type == "Credential")
+      @client.setBasicAuth authentication.username, authentication.password
+    else  if (authentication is AuthenticationOAuth || authentication.type == "OAuth")
+      spsUrl = spsUri + '/_apis/'
+      @clientSPS = requestJson.newClient(spsUrl)
+      @client.headers.Authorization = "bearer " + authentication.accessToken
+      @clientSPS.headers.Authorization = "bearer " + authentication.accessToken
     else
-        throw "unknown authentication type"
+      throw "unknown authentication type"
     @_authType = authentication.type
 
   findItemField: (fields, fieldName) ->
@@ -98,8 +103,13 @@ class exports.Client
   
   setAccessToken : (acessToken) ->
     if (@_authType != "OAuth")
-        throw "can only set access token for OAuth client"    
+      throw "can only set access token for OAuth client"
     @client.headers.Authorization = "bearer " + acessToken
+    
+  checkAndRequireOAuth : (methodName) ->
+    if (@_authType != "OAuth")
+      throw methodName + " can only be invoked with OAuth"
+      
 
   #########################################
   # Projects and Teams
@@ -482,9 +492,9 @@ class exports.Client
   #########################################
 
   getCurrentProfile: (callback) ->
-    path = buildApiPath 'profile/profiles/me'
-    # console.log path
-    @client.get path, (err, res, body) ->
+    @checkAndRequireOAuth "getCurrentProfile"
+    path = buildApiPath 'profile/profiles/me'    
+    @clientSPS.get path, (err, res, body) ->
       parseReplyData err, body, callback
 
   #########################################
@@ -533,7 +543,7 @@ class exports.Client
       parseReplyData err, body, callback
 
   joinRoom: (roomId, userId, userGuid, callback) ->
-    console.log userId
+    # console.log userId
     path = buildApiPath 'chat/rooms/' + roomId + '/users/' + userGuid
     @client.put path, userId, (err, res, body) ->
       callback err, res.statusCode
@@ -576,7 +586,7 @@ class exports.Client
   updateMessage: (roomId, messageId, message, callback) ->
     path = buildApiPath 'chat/rooms/' + roomId + '/messages/' + messageId
     @client.patch path, (err, res, body) ->
-      console.log res
+      # console.log res
       parseReplyData err, body, callback
 
   deleteMessage: (roomId, messageId, callback) ->
