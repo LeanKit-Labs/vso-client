@@ -496,9 +496,15 @@ class exports.Client
 
   getCurrentProfile: (callback) ->
     @checkAndRequireOAuth "getCurrentProfile"
-    path = @buildApiPath 'profile/profiles/me'    
+    path = @buildApiPath 'profile/profiles/me'
     @clientSPS.get path, (err, res, body) ->
       parseReplyData err, body, callback
+
+  getConnectionData: (callback) ->
+    path = @buildApiPath 'connectionData'
+    @client.get path, (err, res, body) ->
+      parseReplyData err, body, callback
+      
 
   #########################################
   # Team Rooms
