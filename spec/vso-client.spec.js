@@ -32,16 +32,24 @@ describe('VSO Client Tests', function(){
     client.should.have.property('_authType');
     client._authType.should.equal('Credential');
     should.exist(client.client)
+    should.not.exist(client.clientSPS)
   });
 
   it ('should have a OAuth valid client', function () {
-      should.exist(client);
+      should.exist(clientOAuth);
       clientOAuth.should.have.property('url');
       clientOAuth.should.have.property('_authType');
       clientOAuth._authType.should.equal('OAuth');
-      should.exist(client.client)
+      should.exist(clientOAuth.client)
+      should.exist(clientOAuth.clientSPS)
   });
 
+  it('should have overriden version', function () {
+      var version = "1.0-preview-unitTest"
+      clientWithVersion = Client.createClient(url, collection, username, password, { apiVersion: version } );
+
+      clientWithVersion.apiVersion.should.equal(version);      
+  });
 
   it ( 'should return a field by name', function() {
     var field = client.findItemField(fields, 'System.Rev');
@@ -664,16 +672,9 @@ describe('VSO Client Tests', function(){
 
   } );
 
-  describe.skip('Accounts and Profiles Tests', function(){
-    it ('should return the current profile', function(done) {
-      client.getCurrentProfile(function(err, profile){
-        should.not.exist(err);
-        should.exist(profile);
-        console.log(profile);
-        done();
-      } );
-    } );
-  } );
+  // Accounts and Profiles Tests are not testable since they required
+  // OAuth, thus requiring human intervention to get a token with
+  // an authorization  
 
   describe.skip('Team Room tests', function() {
     it ( 'should return a list of team rooms', function(done) {
