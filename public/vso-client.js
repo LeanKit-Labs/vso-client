@@ -624,6 +624,14 @@ exports.Client = (function() {
     });
   };
 
+  Client.prototype.getConnectionData = function(callback) {
+    var path;
+    path = this.buildApiPath('connectionData');
+    return this.client.get(path, function(err, res, body) {
+      return parseReplyData(err, body, callback);
+    });
+  };
+
   Client.prototype.getRooms = function(callback) {
     var path;
     path = this.buildApiPath('chat/rooms');
