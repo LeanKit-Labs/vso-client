@@ -127,4 +127,4 @@ The VSO client is written in [CoffeeScript](http://coffeescript.org/). To modify
 
 ### License
 
-The LeanKit Node Client is licensed under [MIT](http://www.opensource.org/licenses/mit-license.php). Refer to [license.txt](https://github.com/leankit-labs/vso-client/blob/master/LICENSE) for more information.
+The Visual Studio Online client module is licensed under [MIT](http://www.opensource.org/licenses/mit-license.php). Refer to [license.txt](https://github.com/leankit-labs/vso-client/blob/master/LICENSE) for more information.
