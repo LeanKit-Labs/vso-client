@@ -101,7 +101,6 @@ exports.Client = (function() {
 
   parseReplyData = function(error, res, body, callback) {
     var err;
-    console.log("RESPONSE " + res.statusCode);
     if (this._authType !== "OAuth" && res.statusCode === 203) {
       return callback("Error unauthorized. Check OAUth token", body);
     } else if (res.statusCode === 401 || (this._authType !== "OAuth" && res.statusCode === 203)) {

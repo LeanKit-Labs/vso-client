@@ -64,6 +64,21 @@ describe('VSO Client Tests', function(){
     field.field.name.should.equal('Rev');
   } );
 
+
+  describe('Auth tests', function () {
+
+      it('should fail authentication with error', function (done) {
+
+          var clientWithWrongCredential = Client.createClient(url, collection, "DUMMY_USER_NAME", "DUMMY PASSWORD SET TO FAIL");
+
+          clientWithWrongCredential.getProjects(function (err, projects) {
+              should.exist(err);
+              done();
+          });
+      });
+  });
+
+
   describe('Project tests', function() {
     var testProject = null,
         testCollection = null,

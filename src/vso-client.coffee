@@ -57,9 +57,7 @@ class exports.Client
     @_authType = authentication.type
     @apiVersion = options?.apiVersion || apiVersion
     
-  parseReplyData = (error, res, body, callback) ->
-    console.log "RESPONSE " + res.statusCode
-    
+  parseReplyData = (error, res, body, callback) ->    
     if @_authType != "OAuth" and res.statusCode == 203
       callback "Error unauthorized. Check OAUth token", body
     else if res.statusCode == 401 or (@_authType != "OAuth" and res.statusCode == 203)
