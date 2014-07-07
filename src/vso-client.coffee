@@ -357,7 +357,10 @@ class exports.Client
   createWorkItem: (item, callback) ->
     path = @buildApiPath 'wit/workitems'
     @client.post path, item, (err, res, body) ->
-      parseReplyData err, res,  body, callback
+      if res.statusCode == 400
+        callback body.exception?.Message or "Error Creating work item", body
+      else
+        parseReplyData err, res,  body, callback
 
   updateWorkItem: (id, item, callback) ->
     path = @buildApiPath 'wit/workitems/' + id
