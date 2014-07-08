@@ -443,14 +443,23 @@ exports.Client = (function() {
     var path;
     path = this.buildApiPath('wit/workitems');
     return this.client.post(path, item, function(err, res, body) {
-      return parseReplyData(err, res, body, callback);
+      var _ref;
+      if (res.statusCode === 400) {
+        return callback(((_ref = body.exception) != null ? _ref.Message : void 0) || "Error Creating work item", body);
+      } else {
+        return parseReplyData(err, res, body, callback);
+      }
     });
   };
 
-  Client.prototype.updateWorkItem = function(id, item, callback) {
-    var path;
+  Client.prototype.updateWorkItem = function(id, operations, callback) {
+    var options, path;
     path = this.buildApiPath('wit/workitems/' + id);
-    return this.client.patch(path, item, function(err, res, body) {
+    options = {
+      headers: {}
+    };
+    options.headers['content-type'] = 'application/json-patch+json';
+    return this.client.patch(path, operations, options, function(err, res, body) {
       return parseReplyData(err, res, body, callback);
     });
   };
@@ -549,7 +558,7 @@ exports.Client = (function() {
     });
   };
 
-  Client.prototype.getQuery = function(queryOrFolderId, depth, expand, callback) {
+  Client.prototype.getQuery = function(projectName, queryOrFolderId, depth, expand, callback) {
     var params, path;
     if (typeof depth === 'function') {
       callback = depth;
@@ -565,26 +574,26 @@ exports.Client = (function() {
     if (expand) {
       params += '&$expand=' + expand;
     }
-    path = this.buildApiPath('wit/queries/' + queryOrFolderId, params);
+    path = this.buildApiPath('wit/' + projectName + '/queries/' + queryOrFolderId, params);
     return this.client.get(path, function(err, res, body) {
       return parseReplyData(err, res, body, callback);
     });
   };
 
-  Client.prototype.createQuery = function(name, folderId, wiql, callback) {
+  Client.prototype.createQuery = function(projectName, name, folderId, wiql, callback) {
     var path, query;
     query = {
       name: name,
       parentId: folderId,
       wiql: wiql
     };
-    path = this.buildApiPath('wit/queries');
+    path = this.buildApiPath('wit/' + projectName + '/queries');
     return this.client.post(path, query, function(err, res, body) {
       return parseReplyData(err, res, body, callback);
     });
   };
 
-  Client.prototype.updateQuery = function(queryId, name, folderId, wiql, callback) {
+  Client.prototype.updateQuery = function(projectName, queryId, name, folderId, wiql, callback) {
     var path, query;
     query = {
       id: queryId,
@@ -592,35 +601,35 @@ exports.Client = (function() {
       parentId: folderId,
       wiql: wiql
     };
-    path = this.buildApiPath('wit/queries/' + queryId);
+    path = this.buildApiPath('wit/' + projectName + '/queries/' + queryId);
     return this.client.patch(path, query, function(err, res, body) {
       return parseReplyData(err, res, body, callback);
     });
   };
 
-  Client.prototype.createFolder = function(name, parentFolderId, callback) {
+  Client.prototype.createFolder = function(projectName, name, parentFolderId, callback) {
     var folder, path;
     folder = {
       name: name,
       parentId: parentFolderId,
-      type: 'folder'
+      isFolder: true
     };
-    path = this.buildApiPath('wit/queries');
+    path = this.buildApiPath('wit/' + projectName + '/queries');
     return this.client.post(path, folder, function(err, res, body) {
       return parseReplyData(err, res, body, callback);
     });
   };
 
-  Client.prototype.deleteQuery = function(queryId, callback) {
+  Client.prototype.deleteQuery = function(projectName, queryId, callback) {
     var path;
-    path = this.buildApiPath('wit/queries/' + queryId);
+    path = this.buildApiPath('wit/' + projectName + '/queries/' + queryId);
     return this.client.del(path, function(err, res, body) {
       return parseReplyData(err, res, body, callback);
     });
   };
 
-  Client.prototype.deleteFolder = function(folderId, callback) {
-    return this.deleteQuery(folderId, callback);
+  Client.prototype.deleteFolder = function(projectName, folderId, callback) {
+    return this.deleteQuery(projectName, folderId, callback);
   };
 
   Client.prototype.getCurrentProfile = function(callback) {
