@@ -1,12 +1,16 @@
 {
   "name": "vso-client",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Visual Studio Online Client",
   "main": "./public/vso-client.js",
   "scripts": {
     "test": "gulp"
   },
   "author": "David Neal <david@reverentgeek.com> (http://reverentgeek.com)",
+  "contributors": [
+    { "name": "Tiago Pascoal" },
+    { "name": "Rob Maher" }
+  ],
   "license": "MIT",
   "devDependencies": {
     "mocha": "~1.18.2",
@@ -19,7 +23,7 @@
   },
   "dependencies": {
     "lodash": "~2.4.1",
-    "request-json": "~0.4.10",
+    "request-json": "~0.4.11",
     "request": "~2.36.0"
   },
   "bugs": {

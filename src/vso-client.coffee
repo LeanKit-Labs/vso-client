@@ -6,7 +6,7 @@ apiVersion = '1.0-preview'
 
 spsUri = 'https://app.vssps.visualstudio.com'
 vsoTokenUri = spsUri + '/oauth2/token'
- 
+
 requestToken = (clientAssertion, assertion, grantType, redirectUri, callback, tokenUri) ->
 
   request.post tokenUri, {
@@ -44,7 +44,7 @@ class AuthenticationOAuth
 class exports.Client
   constructor: (@url, @collection, authentication, options) ->
     apiUrl = url + '/' + collection + '/_apis/'
-    @client = requestJson.newClient(apiUrl)    
+    @client = requestJson.newClient(apiUrl)
     if (authentication is AuthenticationCredential || authentication.type == "Credential")
       @client.setBasicAuth authentication.username, authentication.password
     else  if (authentication is AuthenticationOAuth || authentication.type == "OAuth")
@@ -56,8 +56,8 @@ class exports.Client
       throw "unknown authentication type"
     @_authType = authentication.type
     @apiVersion = options?.apiVersion || apiVersion
-    
-  parseReplyData = (error, res, body, callback) ->    
+
+  parseReplyData = (error, res, body, callback) ->
     if @_authType != "OAuth" and res.statusCode == 203
       callback "Error unauthorized. Check OAUth token", body
     else if res.statusCode == 401 or (@_authType != "OAuth" and res.statusCode == 203)
@@ -85,7 +85,7 @@ class exports.Client
       callback 'Unknown Error', body
     else
       callback error, body
-    
+
 
   findItemField: (fields, fieldName) ->
     field = _.find fields, (f) ->
@@ -99,19 +99,19 @@ class exports.Client
       if field
         break
     field
-  
+
   setAccessToken : (acessToken) ->
     if (@_authType != "OAuth")
       throw "can only set access token for OAuth client"
     @client.headers.Authorization = "bearer " + acessToken
-   
+
   setVersion : (version) ->
     @apiVersion = version
-    
+
   checkAndRequireOAuth : (methodName) ->
     if (@_authType != "OAuth")
       throw methodName + " can only be invoked with OAuth"
-      
+
   buildApiPath : (path, params) ->
     returnPath = path + '?api-version=' + @apiVersion
     if params and params.length > 0
@@ -362,9 +362,11 @@ class exports.Client
       else
         parseReplyData err, res,  body, callback
 
-  updateWorkItem: (id, item, callback) ->
+  updateWorkItem: (id, operations, callback) ->
     path = @buildApiPath 'wit/workitems/' + id
-    @client.patch path, item, (err, res, body) ->
+    options = { headers: {} }
+    options.headers['content-type'] = 'application/json-patch+json'
+    @client.patch path, operations, options, (err, res, body) ->
       parseReplyData err, res,  body, callback
 
   updateWorkItems: (items, callback) ->
@@ -444,7 +446,7 @@ class exports.Client
     @client.get path, (err, res, body) ->
       parseReplyData err, res,  body, callback
 
-  getQuery: (queryOrFolderId, depth, expand, callback) ->
+  getQuery: (projectName, queryOrFolderId, depth, expand, callback) ->
     if typeof depth is 'function'
       callback = depth
       depth = expand = null
@@ -458,45 +460,45 @@ class exports.Client
     if expand
       params += '&$expand=' + expand
 
-    path = @buildApiPath 'wit/queries/' + queryOrFolderId, params
+    path = @buildApiPath 'wit/' + projectName + '/queries/' + queryOrFolderId, params
     @client.get path, (err, res, body) ->
       parseReplyData err, res,  body, callback
 
-  createQuery: (name, folderId, wiql, callback) ->
+  createQuery: (projectName, name, folderId, wiql, callback) ->
     query =
       name: name
       parentId: folderId
       wiql: wiql
-    path = @buildApiPath 'wit/queries'
+    path = @buildApiPath 'wit/' + projectName + '/queries'
     @client.post path, query, (err, res, body) ->
       parseReplyData err, res,  body, callback
 
-  updateQuery: (queryId, name, folderId, wiql, callback) ->
+  updateQuery: (projectName, queryId, name, folderId, wiql, callback) ->
     query =
       id: queryId
       name: name
       parentId: folderId
       wiql: wiql
-    path = @buildApiPath 'wit/queries/' + queryId
+    path = @buildApiPath 'wit/' + projectName + '/queries/' + queryId
     @client.patch path, query, (err, res, body) ->
       parseReplyData err, res,  body, callback
 
-  createFolder: (name, parentFolderId, callback) ->
+  createFolder: (projectName, name, parentFolderId, callback) ->
     folder =
       name: name
       parentId: parentFolderId
-      type: 'folder'
-    path = @buildApiPath 'wit/queries'
+      isFolder: true
+    path = @buildApiPath 'wit/' + projectName + '/queries'
     @client.post path, folder, (err, res, body) ->
       parseReplyData err, res,  body, callback
 
-  deleteQuery: (queryId, callback) ->
-    path = @buildApiPath 'wit/queries/' + queryId
+  deleteQuery: (projectName, queryId, callback) ->
+    path = @buildApiPath 'wit/' + projectName + '/queries/' + queryId
     @client.del path, (err, res, body) ->
       parseReplyData err, res,  body, callback
 
-  deleteFolder: (folderId, callback) ->
-    @deleteQuery folderId, callback
+  deleteFolder: (projectName, folderId, callback) ->
+    @deleteQuery projectName, folderId, callback
 
   #########################################
   # Accounts and Profiles
@@ -512,7 +514,7 @@ class exports.Client
     path = @buildApiPath 'connectionData'
     @client.get path, (err, res, body) ->
       parseReplyData err, res,  body, callback
-      
+
 
   #########################################
   # Team Rooms

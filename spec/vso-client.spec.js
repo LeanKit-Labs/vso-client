@@ -48,7 +48,7 @@ describe('VSO Client Tests', function(){
       var version = "1.0-preview-unitTest"
       clientWithVersion = Client.createClient(url, collection, username, password, { apiVersion: version } );
 
-      clientWithVersion.apiVersion.should.equal(version);      
+      clientWithVersion.apiVersion.should.equal(version);
   });
 
   it ( 'should return a field by name', function() {
@@ -108,6 +108,7 @@ describe('VSO Client Tests', function(){
         should.exist(project.collection);
         should.exist(project.defaultTeam);
         testProject = project;
+        // console.log(testProject);
         done();
       } );
     } );
@@ -365,20 +366,19 @@ describe('VSO Client Tests', function(){
           return q.name === 'Shared Queries';
         });
         should.exist(sharedFolder);
-        sharedFolder.value.should.be.instanceOf(Array);
-        sharedFolder.value.length.should.be.above(0);
+        sharedFolder.children.should.be.instanceOf(Array);
+        sharedFolder.children.length.should.be.above(0);
         // console.log(sharedFolder);
-        var query = _.find(sharedFolder.value, function(q) {
-          return q.name === 'My Tasks';
+        var query = _.find(sharedFolder.children, function(q) {
+          return q.name === 'My Bugs';
         });
         should.exist(query);
         // console.log(query);
-        query.should.have.property('name');
-        query.should.have.property('type');
         query.should.have.property('id');
-        query.should.have.property('url');
         query.should.have.property('parentId');
-        query.project.should.be.instanceOf(Object);
+        query.should.have.property('name');
+        query.should.have.property('url');
+        query.should.have.property('_links');
         testQuery = query;
         done();
       } );
@@ -399,8 +399,9 @@ describe('VSO Client Tests', function(){
     } );
 
     it ('should return a query', function(done) {
+      should.exist(testProject);
       should.exist(testQuery);
-      client.getQuery(testQuery.id, function(err, query){
+      client.getQuery(testProject.name, testQuery.id, function(err, query){
         if (err) {
           console.log(err);
           console.log(query);
@@ -408,18 +409,19 @@ describe('VSO Client Tests', function(){
         should.not.exist(err);
         should.exist(query);
         // console.log(query);
-        query.should.have.property('name');
-        query.should.have.property('type');
         query.should.have.property('id');
+        query.should.have.property('parentId');
+        query.should.have.property('name');
+        query.should.have.property('_links');
         query.should.have.property('url');
-        query.project.should.be.instanceOf(Object);
         done();
       } );
     } );
 
     it ('should should create a query folder', function(done) {
+      should.exist(testProject);
       should.exist(myQueries);
-      client.createFolder('testFolder1', myQueries.id, function(err, folder){
+      client.createFolder(testProject.name, 'testFolder1', myQueries.id, function(err, folder){
         should.not.exist(err);
         should.exist(folder);
         folder.should.have.property('id');
@@ -429,11 +431,12 @@ describe('VSO Client Tests', function(){
     } );
 
     it ('should should create a query', function(done) {
+      should.exist(testProject);
       should.exist(testFolder);
 
       var wiql = 'Select [System.Id], [System.Title], [System.State] From WorkItems Where [System.WorkItemType] = \'Bug\' order by [Microsoft.VSTS.Common.Priority] asc, [System.CreatedDate] desc';
 
-      client.createQuery('testQuery1', testFolder.id, wiql, function(err, query){
+      client.createQuery(testProject.name, 'testQuery1', testFolder.id, wiql, function(err, query){
         should.not.exist(err);
         should.exist(query);
         // console.log(query);
@@ -445,12 +448,13 @@ describe('VSO Client Tests', function(){
     } );
 
     it ('should should update a query', function(done) {
+      should.exist(testProject);
       should.exist(testFolder);
       should.exist(testQuery);
 
       var wiql = 'Select [System.Id], [System.Title], [System.State] From WorkItems Where [System.WorkItemType] = \'Bug\' order by [Microsoft.VSTS.Common.Priority] asc, [System.CreatedDate] asc';
 
-      client.updateQuery(testQuery.id, 'testQuery1-updated', testFolder.id, wiql, function(err, query){
+      client.updateQuery(testProject.name, testQuery.id, 'testQuery1-updated', testFolder.id, wiql, function(err, query){
         should.not.exist(err);
         should.exist(query);
         // console.log(query);
@@ -462,8 +466,9 @@ describe('VSO Client Tests', function(){
     } );
 
     it ('should should delete a query', function(done) {
+      should.exist(testProject);
       should.exist(testQuery);
-      client.deleteQuery(testQuery.id, function(err, query){
+      client.deleteQuery(testProject.name, testQuery.id, function(err, query){
         should.not.exist(err);
         should.exist(query);
         done();
@@ -471,8 +476,9 @@ describe('VSO Client Tests', function(){
     } );
 
     it ('should should delete a query folder', function(done) {
+      should.exist(testProject);
       should.exist(testFolder);
-      client.deleteFolder(testFolder.id, function(err, folder){
+      client.deleteFolder(testProject.name, testFolder.id, function(err, folder){
         should.not.exist(err);
         should.exist(folder);
         done();
@@ -524,9 +530,9 @@ describe('VSO Client Tests', function(){
         item.should.have.property('rev');
         item.should.have.property('url');
         item.should.have.property('webUrl');
-        item.should.have.property('updatesUrl');
+        item.should.have.property('_links');
         should.exist(item.fields);
-        item.fields.length.should.be.above(0);
+        item.fields.should.have.property('System.Id');
         // console.log(item.fields);
         done();
       } );
@@ -548,9 +554,9 @@ describe('VSO Client Tests', function(){
         item.should.have.property('rev');
         item.should.have.property('url');
         item.should.have.property('webUrl');
-        item.should.have.property('updatesUrl');
+        item.should.have.property('_links');
         should.exist(item.fields);
-        item.fields.length.should.be.above(0);
+        item.fields.should.have.property('System.Id');
         // console.log(item.fields);
         done();
       } );
@@ -574,10 +580,9 @@ describe('VSO Client Tests', function(){
           item.should.have.property('id');
           item.should.have.property('rev');
           item.should.have.property('url');
-          item.should.have.property('webUrl');
-          item.should.have.property('updatesUrl');
+          item.should.have.property('_links');
           should.exist(item.fields);
-          item.fields.length.should.be.above(0);
+          item.fields.should.have.property('System.Id');
           should.exist(item.links);
           item.links.length.should.be.above(0);
           testItemId = item.id;
@@ -601,14 +606,41 @@ describe('VSO Client Tests', function(){
         item.should.have.property('rev');
         item.should.have.property('url');
         item.should.have.property('webUrl');
-        item.should.have.property('updatesUrl');
+        item.should.have.property('_links');
         should.exist(item.fields);
-        item.fields.length.should.be.above(0);
-        should.exist(item.links);
-        item.links.length.should.be.above(0);
-        // console.log(item.links);
+        item.fields.should.have.property('System.Id');
         done();
       } );
+    } );
+
+    it ('should update a work item', function(done) {
+      var update = {
+        operations: [
+          {
+            operation: "replace",
+            path: '/fields/System.Title',
+            value: 'Updated title ' + Date.now()
+          }
+        ]
+      };
+      client.updateWorkItem(testItemId, update, function(err, item) {
+        if (err) {
+          console.log(err);
+          console.log(item);
+        }
+        should.not.exist(err);
+        should.exist(item);
+        // console.log(item);
+        item.should.have.property('id');
+        item.should.have.property('rev');
+        item.should.have.property('url');
+        item.should.have.property('webUrl');
+        item.should.have.property('_links');
+        should.exist(item.fields);
+        item.fields.should.have.property('System.Id');
+        done();
+      } );
+
     } );
 
     it ('should return work item updates', function(done) {
@@ -622,19 +654,19 @@ describe('VSO Client Tests', function(){
         // console.log(updates);
         updates.length.should.be.above(0);
         var update = updates[updates.length-1];
-        update.should.have.property('url');
-        update.should.have.property('revisionUrl');
+        // console.log(update);
         update.should.have.property('id');
         update.should.have.property('rev');
+        update.should.have.property('revisedBy');
+        update.should.have.property('revisedDate');
+        update.should.have.property('url');
         should.exist(update.fields);
-        // console.log(update.fields);
-        update.fields.length.should.be.above(0);
         done();
       } );
     } );
 
     it ('should return a page of work item updates', function(done) {
-      client.getWorkItemUpdates(testItemId, 2, 2, function(err, updates) {
+      client.getWorkItemUpdates(testItemId, 2, 0, function(err, updates) {
         if (err) {
           console.log(err);
           console.log(updates);
@@ -643,13 +675,13 @@ describe('VSO Client Tests', function(){
         should.exist(updates);
         // console.log(updates);
         updates.length.should.equal(2);
-        updates[0].rev.should.be.above(2)
+        updates[updates.length - 1].rev.should.be.above(1)
         done();
       } );
     } );
 
     it ('should return a work item update by revision number', function(done) {
-      client.getWorkItemUpdate(testItemId, 4, function(err, update) {
+      client.getWorkItemUpdate(testItemId, 2, function(err, update) {
         if (err) {
           console.log(err);
           console.log(update);
@@ -657,10 +689,11 @@ describe('VSO Client Tests', function(){
         should.not.exist(err);
         should.exist(update);
         // console.log(update);
-        update.should.have.property('url');
-        update.should.have.property('revisionUrl');
         update.should.have.property('id');
         update.should.have.property('rev');
+        update.should.have.property('revisedBy');
+        update.should.have.property('revisedDate');
+        update.should.have.property('url');
         should.exist(update.fields);
         done();
       } );
@@ -680,7 +713,6 @@ describe('VSO Client Tests', function(){
         item.should.have.property('url');
         item.should.have.property('webUrl');
         should.exist(item.fields);
-        item.fields.length.should.be.above(0);
         done();
       } );
     } );
@@ -689,7 +721,7 @@ describe('VSO Client Tests', function(){
 
   // Accounts and Profiles Tests are not testable since they required
   // OAuth, thus requiring human intervention to get a token with
-  // an authorization  
+  // an authorization
 
   describe.skip('Team Room tests', function() {
     it ( 'should return a list of team rooms', function(done) {
@@ -972,12 +1004,15 @@ describe('VSO Client Tests', function(){
     before(function(done){
       testRepoName = 'testRepo-' + (Math.random() + 1).toString(36).substring(7);
       client.getProjects(true, function(err, projects) {
+        // console.log(projects);
+        // console.log(projects[0]);
         // Find a project that uses git
         if (projects && projects.length > 0) {
           testProject = _.find(projects, function(p) {
             return p.capabilities.versioncontrol.sourceControlType === 'Git';
           } );
         }
+        // console.log(testProject);
         done();
       } );
     } );
@@ -1104,6 +1139,7 @@ describe('VSO Client Tests', function(){
               should.not.exist(err);
               should.exist(commits);
               commits.should.be.instanceOf(Array);
+              // console.log(commits);
               if (commits.length > 0) {
                 var commit = commits[0];
                 commit.should.have.property('commitId');
