@@ -1059,7 +1059,7 @@ class exports.Client
 
   getBuildDefinitions: (callback) ->
     path= @buildApiPath 'build/definitions'
-    @client.get path, (err,res,body) ->
+    @client.get path, (err,res,body) =>
       @parseReplyData err, res,  body, callback
 
   queueBuild: (buildRequest, callback) ->
