@@ -1461,9 +1461,11 @@ exports.Client = (function() {
   Client.prototype.getBuildDefinitions = function(callback) {
     var path;
     path = this.buildApiPath('build/definitions');
-    return this.client.get(path, function(err, res, body) {
-      return this.parseReplyData(err, res, body, callback);
-    });
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
   };
 
   Client.prototype.queueBuild = function(buildRequest, callback) {
