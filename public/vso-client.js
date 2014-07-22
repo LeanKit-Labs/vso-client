@@ -173,6 +173,13 @@ exports.Client = (function() {
     return returnPath;
   };
 
+  Client.prototype.getPatchContentType = function() {
+    if (this.apiVersion === "1.0-preview") {
+      return 'application/json';
+    }
+    return 'application/json-patch+json';
+  };
+
   Client.prototype.getProjects = function(includeCapabilities, stateFilter, pageSize, skip, callback) {
     var path;
     if (typeof includeCapabilities === 'function') {
@@ -490,7 +497,7 @@ exports.Client = (function() {
     options = {
       headers: {}
     };
-    options.headers['content-type'] = 'application/json-patch+json';
+    options.headers['content-type'] = this.getPatchContentType();
     return this.client.patch(path, operations, options, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -1461,9 +1468,11 @@ exports.Client = (function() {
   Client.prototype.getBuildDefinitions = function(callback) {
     var path;
     path = this.buildApiPath('build/definitions');
-    return this.client.get(path, function(err, res, body) {
-      return this.parseReplyData(err, res, body, callback);
-    });
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
   };
 
   Client.prototype.queueBuild = function(buildRequest, callback) {
