@@ -506,9 +506,13 @@ exports.Client = (function() {
   };
 
   Client.prototype.updateWorkItems = function(items, callback) {
-    var path;
+    var options, path;
     path = this.buildApiPath('wit/workitems');
-    return this.client.patch(path, item, (function(_this) {
+    options = {
+      headers: {}
+    };
+    options.headers['content-type'] = this.getPatchContentType();
+    return this.client.patch(path, items, options, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
       };
