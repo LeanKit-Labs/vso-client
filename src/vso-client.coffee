@@ -119,6 +119,11 @@ class exports.Client
     # console.log returnPath
     returnPath
 
+  getPatchContentType : ->
+    return 'application/json' if @apiVersion == "1.0-preview"
+
+    return 'application/json-patch+json'
+
   #########################################
   # Projects and Teams
   #########################################
@@ -365,13 +370,15 @@ class exports.Client
   updateWorkItem: (id, operations, callback) ->
     path = @buildApiPath 'wit/workitems/' + id
     options = { headers: {} }
-    options.headers['content-type'] = 'application/json-patch+json'
+    options.headers['content-type'] = @getPatchContentType()
     @client.patch path, operations, options, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
   updateWorkItems: (items, callback) ->
     path = @buildApiPath 'wit/workitems'
-    @client.patch path, item, (err, res, body) =>
+    options = { headers: {} }
+    options.headers['content-type'] = @getPatchContentType()
+    @client.patch path, items, options, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
   getWorkItemUpdates: (id, pageSize, skip, callback) ->

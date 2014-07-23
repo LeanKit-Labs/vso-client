@@ -173,6 +173,13 @@ exports.Client = (function() {
     return returnPath;
   };
 
+  Client.prototype.getPatchContentType = function() {
+    if (this.apiVersion === "1.0-preview") {
+      return 'application/json';
+    }
+    return 'application/json-patch+json';
+  };
+
   Client.prototype.getProjects = function(includeCapabilities, stateFilter, pageSize, skip, callback) {
     var path;
     if (typeof includeCapabilities === 'function') {
@@ -490,7 +497,7 @@ exports.Client = (function() {
     options = {
       headers: {}
     };
-    options.headers['content-type'] = 'application/json-patch+json';
+    options.headers['content-type'] = this.getPatchContentType();
     return this.client.patch(path, operations, options, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -499,9 +506,13 @@ exports.Client = (function() {
   };
 
   Client.prototype.updateWorkItems = function(items, callback) {
-    var path;
+    var options, path;
     path = this.buildApiPath('wit/workitems');
-    return this.client.patch(path, item, (function(_this) {
+    options = {
+      headers: {}
+    };
+    options.headers['content-type'] = this.getPatchContentType();
+    return this.client.patch(path, items, options, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
       };
