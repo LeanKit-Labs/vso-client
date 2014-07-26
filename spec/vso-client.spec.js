@@ -7,6 +7,90 @@ var mocha = require( 'mocha' ),
     username = process.env.VSO_USER || 'your-username',
     password = process.env.VSO_PWD || 'your-password';
 
+describe('Versioning tests', function () {
+
+    before(function (done) {
+        client = Client.createClient(url, collection, username, password);
+        done();
+    });
+
+    it('equal version minimum met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0", "1.0");
+
+        minimumVersionMet.should.equal(true);
+    });
+
+    it('equal version preview minimum met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0-preview", "1.0-preview");
+
+        minimumVersionMet.should.equal(true);
+    });
+
+    it('greater version minimum met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.1", "1.0");
+
+        minimumVersionMet.should.equal(true);
+    });
+
+    it('greater version with preview minimum met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.1-preview", "1.0-preview");
+
+        minimumVersionMet.should.equal(true);
+    });
+
+    it('greater version with preview version minimum met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.1-preview", "1.0");
+
+        minimumVersionMet.should.equal(true);
+    });
+
+    it('greater version with preview version minimum not met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0-preview", "1.1");
+
+        minimumVersionMet.should.equal(false);
+    });
+
+    it('equal version greater preview minimum met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0-preview.2", "1.0-preview");
+
+        minimumVersionMet.should.equal(true);
+    });
+
+    it('equal version lower preview minimum not met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0-preview", "1.0-preview.2");
+
+        minimumVersionMet.should.equal(false);
+    });
+
+    it('equal version lower non preview minimum met met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0", "1.0-preview.2");
+
+        minimumVersionMet.should.equal(true);
+    });
+
+    it('equal version lower running preview required non preview minimum non met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0-preview", "1.0");
+
+        minimumVersionMet.should.equal(false);
+    });
+
+    it('lower version minimum not met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0", "1.2");
+
+        minimumVersionMet.should.equal(false);
+    });
+
+    it('lower version minimum preview not met', function () {
+        var minimumVersionMet = client.requireMinimumVersion("1.0", "1.2-preview");
+
+        minimumVersionMet.should.equal(false);
+    });
+
+
+});
+
+
+
 describe('VSO Client Tests', function(){
   this.timeout(20000);
   var client,

@@ -2,7 +2,7 @@ _ = require 'lodash'
 requestJson = require 'request-json'
 request = require "request"
 
-apiVersion = '1.0-preview'
+apiVersion = '1.0-preview.1'
 
 spsUri = 'https://app.vssps.visualstudio.com'
 vsoTokenUri = spsUri + '/oauth2/token'
@@ -58,14 +58,14 @@ class exports.Client
     @apiVersion = options?.apiVersion || apiVersion
 
   parseReplyData: (error, res, body, callback) ->
-    if @_authType == "OAuth" and res.statusCode == 203
-      callback "Error unauthorized. Check OAUth token", body
-    else if res.statusCode == 401 or (@_authType != "OAuth" and res.statusCode == 203)
-      callback "Error unauthorized", body
-    else if res.statusCode >= 500 && res.statusCode < 600
-      callback "Error call failed with HTTP Code " + res.statusCode, body
-    else if error
+    if error
       callback error, body
+    else if @_authType == "OAuth" and res?.statusCode == 203
+      callback "Error unauthorized. Check OAUth token", body
+    else if res.statusCode == 401 or (@_authType != "OAuth" and res?.statusCode == 203)
+      callback "Error unauthorized", body
+    else if res?.statusCode >= 500 && res?.statusCode < 600
+      callback "Error call failed with HTTP Code " + res.statusCode, body
     else if (body.errorCode or body.errorCode is 0) and (body.message or body.typeKey)
       #console.log error, body
       err = 'Error ' + body.errorCode + ': '
@@ -123,6 +123,57 @@ class exports.Client
     return 'application/json' if @apiVersion == "1.0-preview"
 
     return 'application/json-patch+json'
+
+
+  #########################################
+  # Version validation
+  #########################################
+
+  getVersion = (version) ->
+    dashPosition = version.indexOf("-")
+
+    if(dashPosition != -1)
+      return version.substring(0,dashPosition)
+
+    return version
+
+  getMinorVersion = (previewVersion) ->
+    parts = previewVersion.split "."
+    return parts[1] if parts.length > 1
+
+    return "0"
+
+  getVersionStage = (version) ->
+    dashPosition = version.indexOf("-")
+
+    if(dashPosition == -1)
+      return ""
+
+    return version.substring dashPosition
+
+  requireMinimumVersion : (version, requiredMinimumVersion) ->
+    console 
+    majorVersion = getVersion version
+    majorRequiredVersion = getVersion requiredMinimumVersion
+
+    # major defines everything. No preview parts
+    return false if majorVersion < majorRequiredVersion
+    return true if majorVersion > majorRequiredVersion
+
+    previewVersion = getVersionStage version
+    previewRequiredMinimumVersion = getVersionStage requiredMinimumVersion
+
+    return majorVersion >= majorRequiredVersion if previewVersion == previewRequiredMinimumVersion == ""
+
+    if previewVersion != "" and previewRequiredMinimumVersion != ""
+      # major is equal. Just need to check preview minor
+      return (getMinorVersion previewVersion) >= (getMinorVersion previewRequiredMinimumVersion)
+
+    #  If we reach here we know majors are the same.
+    return true if previewVersion == "" and previewRequiredMinimumVersion != ""
+
+    return false
+
 
   #########################################
   # Projects and Teams
@@ -359,13 +410,32 @@ class exports.Client
     @client.get path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
-  createWorkItem: (item, callback) ->
-    path = @buildApiPath 'wit/workitems'
-    @client.post path, item, (err, res, body) =>
-      if res.statusCode == 400
-        callback body.exception?.Message or "Error Creating work item", body
-      else
-        @parseReplyData err, res,  body, callback
+  createWorkItem: (item, project, workItemType, callback) ->
+    if @apiVersion == "1.0-preview.1" or @apiVersion == "1.0-preview"
+      callback = project unless callback?
+      path = @buildApiPath 'wit/workitems'
+      @client.post path, item, (err, res, body) =>
+        if err
+          callback err, body
+        else if res.statusCode == 400
+          callback body.exception?.Message or "Error Creating work item", body
+        else
+          @parseReplyData err, res, body, callback
+    else # 1.0-preview.2 or greater
+      @requireMinimumVersion @apiVersion, "1.0-preview.2"
+
+      options = { headers: {} }
+      options.headers['content-type'] = @getPatchContentType()
+
+      path = @buildApiPath "wit/workitems/$#{project}.#{workItemType}"
+
+      @client.patch path, item, options, (err, res, body) =>
+        if err
+          callback err, body
+        else if res.statusCode == 400
+          callback body.exception?.Message or "Error Creating work item", body
+        else
+          @parseReplyData err, res,  body, callback
 
   updateWorkItem: (id, operations, callback) ->
     path = @buildApiPath 'wit/workitems/' + id

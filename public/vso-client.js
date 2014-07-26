@@ -6,7 +6,7 @@ requestJson = require('request-json');
 
 request = require("request");
 
-apiVersion = '1.0-preview';
+apiVersion = '1.0-preview.1';
 
 spsUri = 'https://app.vssps.visualstudio.com';
 
@@ -77,6 +77,8 @@ AuthenticationOAuth = (function() {
 })();
 
 exports.Client = (function() {
+  var getMinorVersion, getVersion, getVersionStage;
+
   function Client(url, collection, authentication, options) {
     var apiUrl, spsUrl;
     this.url = url;
@@ -99,14 +101,14 @@ exports.Client = (function() {
 
   Client.prototype.parseReplyData = function(error, res, body, callback) {
     var err;
-    if (this._authType === "OAuth" && res.statusCode === 203) {
-      return callback("Error unauthorized. Check OAUth token", body);
-    } else if (res.statusCode === 401 || (this._authType !== "OAuth" && res.statusCode === 203)) {
-      return callback("Error unauthorized", body);
-    } else if (res.statusCode >= 500 && res.statusCode < 600) {
-      return callback("Error call failed with HTTP Code " + res.statusCode, body);
-    } else if (error) {
+    if (error) {
       return callback(error, body);
+    } else if (this._authType === "OAuth" && (res != null ? res.statusCode : void 0) === 203) {
+      return callback("Error unauthorized. Check OAUth token", body);
+    } else if (res.statusCode === 401 || (this._authType !== "OAuth" && (res != null ? res.statusCode : void 0) === 203)) {
+      return callback("Error unauthorized", body);
+    } else if ((res != null ? res.statusCode : void 0) >= 500 && (res != null ? res.statusCode : void 0) < 600) {
+      return callback("Error call failed with HTTP Code " + res.statusCode, body);
     } else if ((body.errorCode || body.errorCode === 0) && (body.message || body.typeKey)) {
       err = 'Error ' + body.errorCode + ': ';
       if (body.message && body.message.length > 0) {
@@ -178,6 +180,58 @@ exports.Client = (function() {
       return 'application/json';
     }
     return 'application/json-patch+json';
+  };
+
+  getVersion = function(version) {
+    var dashPosition;
+    dashPosition = version.indexOf("-");
+    if (dashPosition !== -1) {
+      return version.substring(0, dashPosition);
+    }
+    return version;
+  };
+
+  getMinorVersion = function(previewVersion) {
+    var parts;
+    parts = previewVersion.split(".");
+    if (parts.length > 1) {
+      return parts[1];
+    }
+    return "0";
+  };
+
+  getVersionStage = function(version) {
+    var dashPosition;
+    dashPosition = version.indexOf("-");
+    if (dashPosition === -1) {
+      return "";
+    }
+    return version.substring(dashPosition);
+  };
+
+  Client.prototype.requireMinimumVersion = function(version, requiredMinimumVersion) {
+    console;
+    var majorRequiredVersion, majorVersion, previewRequiredMinimumVersion, previewVersion;
+    majorVersion = getVersion(version);
+    majorRequiredVersion = getVersion(requiredMinimumVersion);
+    if (majorVersion < majorRequiredVersion) {
+      return false;
+    }
+    if (majorVersion > majorRequiredVersion) {
+      return true;
+    }
+    previewVersion = getVersionStage(version);
+    previewRequiredMinimumVersion = getVersionStage(requiredMinimumVersion);
+    if ((previewVersion === previewRequiredMinimumVersion && previewRequiredMinimumVersion === "")) {
+      return majorVersion >= majorRequiredVersion;
+    }
+    if (previewVersion !== "" && previewRequiredMinimumVersion !== "") {
+      return (getMinorVersion(previewVersion)) >= (getMinorVersion(previewRequiredMinimumVersion));
+    }
+    if (previewVersion === "" && previewRequiredMinimumVersion !== "") {
+      return true;
+    }
+    return false;
   };
 
   Client.prototype.getProjects = function(includeCapabilities, stateFilter, pageSize, skip, callback) {
@@ -476,19 +530,45 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.createWorkItem = function(item, callback) {
-    var path;
-    path = this.buildApiPath('wit/workitems');
-    return this.client.post(path, item, (function(_this) {
-      return function(err, res, body) {
-        var _ref;
-        if (res.statusCode === 400) {
-          return callback(((_ref = body.exception) != null ? _ref.Message : void 0) || "Error Creating work item", body);
-        } else {
-          return _this.parseReplyData(err, res, body, callback);
-        }
+  Client.prototype.createWorkItem = function(item, project, workItemType, callback) {
+    var options, path;
+    if (this.apiVersion === "1.0-preview.1" || this.apiVersion === "1.0-preview") {
+      if (callback == null) {
+        callback = project;
+      }
+      path = this.buildApiPath('wit/workitems');
+      return this.client.post(path, item, (function(_this) {
+        return function(err, res, body) {
+          var _ref;
+          if (err) {
+            return callback(err, body);
+          } else if (res.statusCode === 400) {
+            return callback(((_ref = body.exception) != null ? _ref.Message : void 0) || "Error Creating work item", body);
+          } else {
+            return _this.parseReplyData(err, res, body, callback);
+          }
+        };
+      })(this));
+    } else {
+      this.requireMinimumVersion(this.apiVersion, "1.0-preview.2");
+      options = {
+        headers: {}
       };
-    })(this));
+      options.headers['content-type'] = this.getPatchContentType();
+      path = this.buildApiPath("wit/workitems/$" + project + "." + workItemType);
+      return this.client.patch(path, item, options, (function(_this) {
+        return function(err, res, body) {
+          var _ref;
+          if (err) {
+            return callback(err, body);
+          } else if (res.statusCode === 400) {
+            return callback(((_ref = body.exception) != null ? _ref.Message : void 0) || "Error Creating work item", body);
+          } else {
+            return _this.parseReplyData(err, res, body, callback);
+          }
+        };
+      })(this));
+    }
   };
 
   Client.prototype.updateWorkItem = function(id, operations, callback) {
