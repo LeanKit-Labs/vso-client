@@ -2,7 +2,7 @@ _ = require 'lodash'
 requestJson = require 'request-json'
 request = require "request"
 
-apiVersion = '1.0-preview'
+apiVersion = '1.0-preview.1'
 
 spsUri = 'https://app.vssps.visualstudio.com'
 vsoTokenUri = spsUri + '/oauth2/token'
@@ -120,7 +120,7 @@ class exports.Client
     returnPath
 
   getPatchContentType : ->
-    return 'application/json' if @apiVersion == "1.0-preview"
+    return 'application/json' if @apiVersion == "1.0-preview.1" or @apiVersion == "1.0-preview"
 
     return 'application/json-patch+json'
 
