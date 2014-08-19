@@ -289,10 +289,7 @@ class exports.Client
           ids = _.map results.results, 'sourceId'
           callback err, ids
 
-  getWorkItemIdsByQuery: (queryId, projectName, callback) ->
-    if typeof projectName is 'function'
-      callback = projectName
-      projectName = 'anything'
+  getWorkItemIdsByQuery: (projectName, queryId, callback) ->
 
     query =
       id: queryId
@@ -495,12 +492,15 @@ class exports.Client
       name: name
       parentId: parentFolderId
       isFolder: true
+    folder.type = 'folder' if @apiVersion == "1.0-preview.1" or @apiVersion == "1.0-preview"
     path = @buildApiPath 'wit/' + projectName + '/queries'
+    path = @buildApiPath 'wit/queries' if @apiVersion == "1.0-preview.1" or @apiVersion == "1.0-preview"
     @client.post path, folder, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
   deleteQuery: (projectName, queryId, callback) ->
     path = @buildApiPath 'wit/' + projectName + '/queries/' + queryId
+    path = @buildApiPath 'wit/queries/' + queryId if @apiVersion == "1.0-preview.1" or @apiVersion == "1.0-preview"
     @client.del path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 

@@ -392,12 +392,8 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.getWorkItemIdsByQuery = function(queryId, projectName, callback) {
+  Client.prototype.getWorkItemIdsByQuery = function(projectName, queryId, callback) {
     var params, path, query;
-    if (typeof projectName === 'function') {
-      callback = projectName;
-      projectName = 'anything';
-    }
     query = {
       id: queryId
     };
@@ -679,7 +675,13 @@ exports.Client = (function() {
       parentId: parentFolderId,
       isFolder: true
     };
+    if (this.apiVersion === "1.0-preview.1" || this.apiVersion === "1.0-preview") {
+      folder.type = 'folder';
+    }
     path = this.buildApiPath('wit/' + projectName + '/queries');
+    if (this.apiVersion === "1.0-preview.1" || this.apiVersion === "1.0-preview") {
+      path = this.buildApiPath('wit/queries');
+    }
     return this.client.post(path, folder, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -690,6 +692,9 @@ exports.Client = (function() {
   Client.prototype.deleteQuery = function(projectName, queryId, callback) {
     var path;
     path = this.buildApiPath('wit/' + projectName + '/queries/' + queryId);
+    if (this.apiVersion === "1.0-preview.1" || this.apiVersion === "1.0-preview") {
+      path = this.buildApiPath('wit/queries/' + queryId);
+    }
     return this.client.del(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);

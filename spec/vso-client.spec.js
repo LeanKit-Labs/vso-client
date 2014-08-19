@@ -5,7 +5,8 @@ var mocha = require( 'mocha' ),
     url = process.env.VSO_URL || 'https://your-account.visualstudio.com/',
     collection = process.env.VSO_COLLECTION || 'DefaultCollection',
     username = process.env.VSO_USER || 'your-username',
-    password = process.env.VSO_PWD || 'your-password';
+    password = process.env.VSO_PWD || 'your-password',
+    testProjectName = process.env.VSO_TEST_PROJECT || 'your-test-project-name';
 
 describe('VSO Client Tests', function(){
   this.timeout(20000);
@@ -21,11 +22,11 @@ describe('VSO Client Tests', function(){
       ];
 
   before(function (done) {
-      console.log(url);
-      console.log(collection);
-      console.log(username);
-      console.log(password);
-    client = Client.createClient(url, collection, username, password);
+    // console.log(url);
+    // console.log(collection);
+    // console.log(username);
+    // console.log(password);
+    client = Client.createClient(url, collection, username, password, {apiVersion : "1.0-preview.1"});
     clientOAuth = Client.createOAuthClient(url, collection, "dummyAccessToken");
     done();
   } );
@@ -113,7 +114,9 @@ describe('VSO Client Tests', function(){
         should.exist(projects);
         // console.log(projects);
         projects.length.should.be.above(0);
-        var project = projects[0];
+        var project = _.find(projects, function(p){
+          return p.name === testProjectName;
+        });
         project.should.have.property('id');
         project.should.have.property('name');
         project.should.have.property('url');
@@ -352,15 +355,29 @@ describe('VSO Client Tests', function(){
       } );
     } );
 
-    // ---------------------------------------
-    // Queries
-    // ---------------------------------------
+  });
+
+  // ---------------------------------------
+  // Queries
+  // ---------------------------------------
+
+  describe('Queries', function(){
 
     var myQueries = testQuery = testFolder = null;
 
+    before(function(done){
+      client.getProjects(function(err, projects){
+        testProject = _.find(projects, function(p){
+          return p.name === testProjectName;
+        });
+        done();
+      } );
+    } );
+
     it ('should return a list of queries', function(done) {
       should.exist(testProject);
-      client.getQueries(testProject.name, function(err, queries) {
+      client.setVersion('1.0-preview.2');
+      client.getQueries(testProject.name, 3, function(err, queries) {
         if (err) {
           console.log(err);
           console.log(queries);
@@ -373,32 +390,48 @@ describe('VSO Client Tests', function(){
           return q.name === 'My Queries';
         });
         should.exist(folder);
+        folder.should.have.property('id');
+        folder.should.have.property('name');
+        folder.should.have.property('path');
+        folder.should.have.property('isFolder');
+        folder.should.have.property('hasChildren');
+        folder.isFolder.should.equal(true);
+        folder.hasChildren.should.equal(true);
+        folder.children.should.be.instanceOf(Array);
         myQueries = folder;
+        // console.log(folder);
         var sharedFolder = _.find(queries, function(q){
           return q.name === 'Shared Queries';
         });
         should.exist(sharedFolder);
         sharedFolder.children.should.be.instanceOf(Array);
         sharedFolder.children.length.should.be.above(0);
-        // console.log(sharedFolder);
+        // console.log(sharedFolder.children);
+        var currentIterationFolder = _.find(sharedFolder.children, function(q){
+          return q.name === 'Current Iteration';
+        });
+        should.exist(currentIterationFolder);
         var query = _.find(sharedFolder.children, function(q) {
           return q.name === 'My Bugs';
         });
         should.exist(query);
         // console.log(query);
         query.should.have.property('id');
-        query.should.have.property('parentId');
         query.should.have.property('name');
-        query.should.have.property('url');
+        query.should.have.property('path');
+        query.should.have.property('html');
         query.should.have.property('_links');
+        query.should.have.property('url');
         testQuery = query;
         done();
       } );
     } );
 
     it ( 'should return a list of work items from saved query', function(done) {
+      should.exist(testProject);
       should.exist(testQuery);
-      client.getWorkItemIdsByQuery(testQuery.id, function(err, ids) {
+      client.setVersion('1.0-preview.1');
+      client.getWorkItemIdsByQuery(testProject.name, testQuery.id, function(err, ids) {
         if (err) {
           console.log(err);
           console.log(ids);
@@ -413,6 +446,7 @@ describe('VSO Client Tests', function(){
     it ('should return a query', function(done) {
       should.exist(testProject);
       should.exist(testQuery);
+      client.setVersion('1.0-preview.2');
       client.getQuery(testProject.name, testQuery.id, function(err, query){
         if (err) {
           console.log(err);
@@ -422,27 +456,33 @@ describe('VSO Client Tests', function(){
         should.exist(query);
         // console.log(query);
         query.should.have.property('id');
-        query.should.have.property('parentId');
         query.should.have.property('name');
+        query.should.have.property('path');
+        query.should.have.property('html');
         query.should.have.property('_links');
         query.should.have.property('url');
         done();
       } );
     } );
 
-    it ('should should create a query folder', function(done) {
+    it ('should create a query folder', function(done) {
+      testFolder = null;
       should.exist(testProject);
       should.exist(myQueries);
+      client.setVersion('1.0-preview.1');
       client.createFolder(testProject.name, 'testFolder1', myQueries.id, function(err, folder){
         should.not.exist(err);
         should.exist(folder);
+        // console.log(folder);
         folder.should.have.property('id');
+        folder.should.have.property('url');
         testFolder = folder;
         done();
       } );
     } );
 
-    it ('should should create a query', function(done) {
+    it ('should create a query', function(done) {
+      testQuery = null;
       should.exist(testProject);
       should.exist(testFolder);
 
@@ -459,7 +499,7 @@ describe('VSO Client Tests', function(){
       } );
     } );
 
-    it ('should should update a query', function(done) {
+    it ('should update a query', function(done) {
       should.exist(testProject);
       should.exist(testFolder);
       should.exist(testQuery);
@@ -477,22 +517,24 @@ describe('VSO Client Tests', function(){
       } );
     } );
 
-    it ('should should delete a query', function(done) {
+    it ('should delete a query', function(done) {
       should.exist(testProject);
       should.exist(testQuery);
       client.deleteQuery(testProject.name, testQuery.id, function(err, query){
         should.not.exist(err);
         should.exist(query);
+        // console.log(query);
         done();
       } );
     } );
 
-    it ('should should delete a query folder', function(done) {
+    it ('should delete a query folder', function(done) {
       should.exist(testProject);
       should.exist(testFolder);
       client.deleteFolder(testProject.name, testFolder.id, function(err, folder){
         should.not.exist(err);
         should.exist(folder);
+        // console.log(folder);
         done();
       } );
     } );
@@ -508,7 +550,8 @@ describe('VSO Client Tests', function(){
 
     it ( 'should return a list of work items from wiql query', function(done) {
       var wiql = 'Select [System.Id], [System.Title], [System.State] From WorkItems Where [System.WorkItemType] = \'Task\' order by [Microsoft.VSTS.Common.Priority] asc, [System.CreatedDate] desc';
-      client.getWorkItemIds(wiql, 'TFS Integration', function(err, ids) {
+      client.setVersion('1.0-preview.1');
+      client.getWorkItemIds(wiql, testProjectName, function(err, ids) {
         if (err) {
           console.log(err);
           console.log(ids);
@@ -527,6 +570,7 @@ describe('VSO Client Tests', function(){
 
     it ( 'should return a list of work items by comma-separated id list', function(done) {
       // client.getWorkItemsById(testItemIds, 'System.Title,System.WorkItemType,System.State', null, null, function(err, items) {
+      client.setVersion('1.0-preview.2');
       client.getWorkItemsById(testItemIds, null, null, null, function(err, items) {
         if (err) {
           console.log(err);
@@ -541,10 +585,11 @@ describe('VSO Client Tests', function(){
         item.should.have.property('id');
         item.should.have.property('rev');
         item.should.have.property('url');
-        item.should.have.property('webUrl');
+        item.should.have.property('html');
+        item.should.have.property('fields');
         item.should.have.property('_links');
         should.exist(item.fields);
-        item.fields.should.have.property('System.Id');
+        item.fields.should.have.property('System.State');
         // console.log(item.fields);
         done();
       } );
@@ -565,10 +610,11 @@ describe('VSO Client Tests', function(){
         item.should.have.property('id');
         item.should.have.property('rev');
         item.should.have.property('url');
-        item.should.have.property('webUrl');
+        item.should.have.property('html');
+        item.should.have.property('fields');
         item.should.have.property('_links');
         should.exist(item.fields);
-        item.fields.should.have.property('System.Id');
+        item.fields.should.have.property('System.State');
         // console.log(item.fields);
         done();
       } );
@@ -617,24 +663,23 @@ describe('VSO Client Tests', function(){
         item.should.have.property('id');
         item.should.have.property('rev');
         item.should.have.property('url');
-        item.should.have.property('webUrl');
+        item.should.have.property('html');
+        item.should.have.property('fields');
         item.should.have.property('_links');
         should.exist(item.fields);
-        item.fields.should.have.property('System.Id');
+        item.fields.should.have.property('System.State');
         done();
       } );
     } );
 
     it ('should update a work item', function(done) {
-      var update = {
-        operations: [
-          {
-            operation: "replace",
-            path: '/fields/System.Title',
-            value: 'Updated title ' + Date.now()
-          }
-        ]
-      };
+      var update = [
+        {
+          op: "replace",
+          path: '/fields/System.Title',
+          value: 'Updated title ' + Date.now()
+        }
+      ];
       client.updateWorkItem(testItemId, update, function(err, item) {
         if (err) {
           console.log(err);
@@ -646,10 +691,11 @@ describe('VSO Client Tests', function(){
         item.should.have.property('id');
         item.should.have.property('rev');
         item.should.have.property('url');
-        item.should.have.property('webUrl');
+        item.should.have.property('html');
+        item.should.have.property('fields');
         item.should.have.property('_links');
         should.exist(item.fields);
-        item.fields.should.have.property('System.Id');
+        item.fields.should.have.property('System.State');
         done();
       } );
 
@@ -693,7 +739,7 @@ describe('VSO Client Tests', function(){
     } );
 
     it ('should return a work item update by revision number', function(done) {
-      client.getWorkItemUpdate(testItemId, 2, function(err, update) {
+      client.getWorkItemUpdate(testItemId, 1, function(err, update) {
         if (err) {
           console.log(err);
           console.log(update);
@@ -712,7 +758,7 @@ describe('VSO Client Tests', function(){
     } );
 
     it ('should return a work item by revision number', function(done) {
-      client.getWorkItemRevision(testItemId, 4, function(err, item) {
+      client.getWorkItemRevision(testItemId, 1, function(err, item) {
         if (err) {
           console.log(err);
           console.log(item);
@@ -723,8 +769,11 @@ describe('VSO Client Tests', function(){
         item.should.have.property('id');
         item.should.have.property('rev');
         item.should.have.property('url');
-        item.should.have.property('webUrl');
+        item.should.have.property('html');
+        item.should.have.property('fields');
+        item.should.have.property('_links');
         should.exist(item.fields);
+        item.fields.should.have.property('System.State');
         done();
       } );
     } );
@@ -747,6 +796,10 @@ describe('VSO Client Tests', function(){
   } );
 
   describe('Version Control tests', function() {
+
+    before(function() {
+      client.setVersion('1.0-preview.1');
+    } );
 
     // ---------------------------------------
     // Version Control
