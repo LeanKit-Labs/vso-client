@@ -80,7 +80,7 @@ Note: Use `refreshToken` to renew an existing access token.
 
 ## API Versioning
 
-Visual Studio Online API are (versioned)[http://www.visualstudio.com/integrate/get-started/get-started-rest-basics-vsi#versioning] to ensure client applications keep working as expect when a new version of the API comes out.
+Visual Studio Online API are [versioned](http://www.visualstudio.com/integrate/get-started/get-started-rest-basics-vsi#versioning) to ensure client applications keep working as expect when a new version of the API comes out.
 
 When you create a client using `createClient` or `createOAuthClient` you can explicitly specify the API version you wish to use.
 
