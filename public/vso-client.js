@@ -6,7 +6,7 @@ requestJson = require('request-json');
 
 request = require("request");
 
-apiVersion = '1.0-preview';
+apiVersion = '1.0-preview.1';
 
 spsUri = 'https://app.vssps.visualstudio.com';
 
@@ -174,7 +174,7 @@ exports.Client = (function() {
   };
 
   Client.prototype.getPatchContentType = function() {
-    if (this.apiVersion === "1.0-preview") {
+    if (this.apiVersion === "1.0-preview.1" || this.apiVersion === "1.0-preview") {
       return 'application/json';
     }
     return 'application/json-patch+json';

@@ -80,6 +80,26 @@ Note: Use `refreshToken` to renew an existing access token.
       }
     });
 
+## API Versioning
+
+Visual Studio Online API are (versioned)[http://www.visualstudio.com/integrate/get-started/get-started-rest-basics-vsi#versioning] to ensure client applications keep working as expect when a new version of the API comes out.
+
+When you create a client using `createClient` or `createOAuthClient` you can explicitly specify the API version you wish to use.
+
+If you don't explicitily specify the version you want to use, version _1.0-preview.1_ will be used by default. Since t is up to the caller to pass the right parameters (and interpret the results) to the methods
+it calls, it is therefore recommended to explicitly pass a version when you create a client.
+
+Note: 1-0.preview means the latest version available, so if use it a new version of the API may break your code. Therefore it is recomended that you specify the full version for the stage part 
+of the version (for example use _preview.1_ instead of _preview_) to make your code behavior deterministic.
+
+In can specify the version by passing the apiVersion member in the options parameter.
+
+An example with the  `createClient` (it works the same with `createOAuthClient`) 
+
+    var vso = require('vso-client');
+    var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd', {apiVersion : "1.0-preview.1"});
+
+
 ## API Reference
 
 Review the [tests](https://github.com/leankit-labs/vso-client/blob/master/spec/vso-client.spec.js) for a full list of client functions and their usuage. Also, refer to the [Visual Studio Online REST API](http://www.visualstudio.com/integrate/reference/reference-vso-overview-vsi) documentation.

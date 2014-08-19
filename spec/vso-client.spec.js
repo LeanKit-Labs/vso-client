@@ -20,7 +20,11 @@ describe('VSO Client Tests', function(){
         { field: { id: 8, name: 'Rev', refName: 'System.Rev' }, value: 20 }
       ];
 
-  before(function(done){
+  before(function (done) {
+      console.log(url);
+      console.log(collection);
+      console.log(username);
+      console.log(password);
     client = Client.createClient(url, collection, username, password);
     clientOAuth = Client.createOAuthClient(url, collection, "dummyAccessToken");
     done();
@@ -50,6 +54,14 @@ describe('VSO Client Tests', function(){
 
       clientWithVersion.apiVersion.should.equal(version);
   });
+
+  it('should have default version', function () {
+      var expectedVersion = "1.0-preview.1"
+      clientWithVersion = Client.createClient(url, collection, username, password);
+
+      clientWithVersion.apiVersion.should.equal(expectedVersion);
+  });
+
 
   it ( 'should return a field by name', function() {
     var field = client.findItemField(fields, 'System.Rev');
