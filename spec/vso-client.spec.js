@@ -1,4 +1,6 @@
-var mocha = require( 'mocha' ),
+// The integration test require the existence of a Team Projet named "TFS INTEGRATION" 
+// Agile process template and git
+var mocha = require('mocha'),
     should = require( 'should' ),
     _ = require( 'lodash' ),
     Client = require( '../public/vso-client' ),
@@ -6,11 +8,23 @@ var mocha = require( 'mocha' ),
     collection = process.env.VSO_COLLECTION || 'DefaultCollection',
     username = process.env.VSO_USER || 'your-username',
     password = process.env.VSO_PWD || 'your-password';
+    proxy = process.env.VSO_PROXY;
+
+    function getOptions() {
+        if (typeof (proxy) !== "undefined" || proxy !== null) {
+            options = {
+                clientOptions : {
+                    proxy : proxy
+                }
+            }
+        }
+        return options;
+    }
 
 describe('Versioning tests', function () {
 
     before(function (done) {
-        client = Client.createClient(url, collection, username, password);
+        client = Client.createClient(url, collection, username, password, getOptions());
         done();
     });
 
@@ -105,8 +119,8 @@ describe('VSO Client Tests', function(){
       ];
 
   before(function(done){
-    client = Client.createClient(url, collection, username, password);
-    clientOAuth = Client.createOAuthClient(url, collection, "dummyAccessToken");
+      client = Client.createClient(url, collection, username, password, getOptions());
+      clientOAuth = Client.createOAuthClient(url, collection, "dummyAccessToken", getOptions());
     done();
   } );
 
@@ -153,7 +167,7 @@ describe('VSO Client Tests', function(){
 
       it('should fail authentication with error', function (done) {
 
-          var clientWithWrongCredential = Client.createClient(url, collection, "DUMMY_USER_NAME", "DUMMY PASSWORD SET TO FAIL");
+          var clientWithWrongCredential = Client.createClient(url, collection, "DUMMY_USER_NAME", "DUMMY PASSWORD SET TO FAIL", getOptions());
 
           clientWithWrongCredential.getProjects(function (err, projects) {
               should.exist(err);
@@ -439,7 +453,7 @@ describe('VSO Client Tests', function(){
         }
         should.not.exist(err);
         should.exist(queries);
-        // console.log(queries);
+        //console.log(queries);
         queries.length.should.be.above(0);
         var folder = _.find(queries, function(q){
           return q.name === 'My Queries';
@@ -452,12 +466,10 @@ describe('VSO Client Tests', function(){
         should.exist(sharedFolder);
         sharedFolder.children.should.be.instanceOf(Array);
         sharedFolder.children.length.should.be.above(0);
-        // console.log(sharedFolder);
         var query = _.find(sharedFolder.children, function(q) {
           return q.name === 'My Bugs';
         });
         should.exist(query);
-        // console.log(query);
         query.should.have.property('id');
         query.should.have.property('parentId');
         query.should.have.property('name');
