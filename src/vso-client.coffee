@@ -43,11 +43,11 @@ class AuthenticationOAuth
 
 class exports.Client
   constructor: (@url, @collection, authentication, options) ->
-    apiUrl = url + '/' + collection + '/_apis/'
-    @client = requestJson.newClient(apiUrl)
+    apiUrl = url
+    @client = requestJson.newClient(apiUrl, options?.clientOptions)
     if (authentication is AuthenticationCredential || authentication.type == "Credential")
       @client.setBasicAuth authentication.username, authentication.password
-    else  if (authentication is AuthenticationOAuth || authentication.type == "OAuth")
+    else if (authentication is AuthenticationOAuth || authentication.type == "OAuth")
       spsUrl = (options?.spsUri || spsUri)+ '/_apis/'
       @clientSPS = requestJson.newClient(spsUrl)
       @client.headers.Authorization = "bearer " + authentication.accessToken
@@ -62,7 +62,7 @@ class exports.Client
       callback error, body
     else if @_authType == "OAuth" and res?.statusCode == 203
       callback "Error unauthorized. Check OAUth token", body
-    else if res.statusCode == 401 or (@_authType != "OAuth" and res?.statusCode == 203)
+    else if res?.statusCode == 401 or (@_authType != "OAuth" and res?.statusCode == 203)
       callback "Error unauthorized", body
     else if res?.statusCode >= 500 && res?.statusCode < 600
       callback "Error call failed with HTTP Code " + res.statusCode, body
@@ -113,9 +113,18 @@ class exports.Client
       throw methodName + " can only be invoked with OAuth"
 
   buildApiPath : (path, params) ->
-    returnPath = path + '?api-version=' + @apiVersion
+    @buildProjectScopedApiPath path, null, params
+
+  buildProjectScopedApiPath : (path, projectName, params) ->
+    if projectName
+      returnPath = '/'+ @collection + '/' + (encodeURI projectName) + '/_apis/' + path + '?api-version=' + @apiVersion
+    else
+      returnPath = '/'+ @collection + '/_apis/' + path + '?api-version=' + @apiVersion
+
     if params and params.length > 0
-      returnPath += '&' + params
+      if (params[0] != '&')
+        params = '&' + params
+      returnPath += params
     # console.log returnPath
     returnPath
 
@@ -124,6 +133,10 @@ class exports.Client
 
     return 'application/json-patch+json'
 
+  encodeFolderPath : (folderParam) ->
+    return "" unless folderParam
+
+    "/" + (folderParam.split("/").map (e) -> encodeURI e).join("/")
 
   #########################################
   # Version validation
@@ -152,7 +165,6 @@ class exports.Client
     return version.substring dashPosition
 
   requireMinimumVersion : (version, requiredMinimumVersion) ->
-    console 
     majorVersion = getVersion version
     majorRequiredVersion = getVersion requiredMinimumVersion
 
@@ -174,6 +186,9 @@ class exports.Client
 
     return false
 
+  checkAndRequireMinimumVersion: (minimumVersion) ->
+    unless @requireMinimumVersion @apiVersion , minimumVersion
+      throw "this method requires at least @{minimumVersion)"
 
   #########################################
   # Projects and Teams
@@ -205,7 +220,6 @@ class exports.Client
       @parseReplyData err, res, body, callback
 
   getProject: (projectId, includeCapabilities, callback) ->
-    # valid stateFilter values: WellFormed, CreatePending, Deleting, New, All
 
     if typeof includeCapabilities is 'function'
       callback = includeCapabilities
@@ -343,7 +357,7 @@ class exports.Client
   getWorkItemIdsByQuery: (queryId, projectName, callback) ->
     if typeof projectName is 'function'
       callback = projectName
-      projectName = 'anything'
+      projectName = null
 
     query =
       id: queryId
@@ -356,6 +370,7 @@ class exports.Client
       params = '@project=' + projectName
 
     path = @buildApiPath 'wit/queryresults', params
+
     @client.post path, query, (err, res, body) =>
       @parseReplyData err, res,  body, (err, results) ->
         if err
@@ -391,9 +406,8 @@ class exports.Client
     if expand
       params += '&$expand=' + expand
 
-    # console.log params
-
     path = @buildApiPath 'wit/workitems', params
+
     @client.get path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
@@ -410,9 +424,9 @@ class exports.Client
     @client.get path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
-  createWorkItem: (item, project, workItemType, callback) ->
-    if @apiVersion == "1.0-preview.1" or @apiVersion == "1.0-preview"
-      callback = project unless callback?
+  createWorkItem: (item, projectName, workItemType, callback) ->
+    if @apiVersion == "1.0-preview.1"
+      callback = projectName unless callback?
       path = @buildApiPath 'wit/workitems'
       @client.post path, item, (err, res, body) =>
         if err
@@ -422,18 +436,17 @@ class exports.Client
         else
           @parseReplyData err, res, body, callback
     else # 1.0-preview.2 or greater
-      @requireMinimumVersion @apiVersion, "1.0-preview.2"
 
       options = { headers: {} }
       options.headers['content-type'] = @getPatchContentType()
 
-      path = @buildApiPath "wit/workitems/$#{project}.#{workItemType}"
+      path = @buildProjectScopedApiPath "wit/workitems/$#{workItemType}", projectName
 
       @client.patch path, item, options, (err, res, body) =>
         if err
           callback err, body
-        else if res.statusCode == 400
-          callback body.exception?.Message or "Error Creating work item", body
+        else if res.statusCode == 404
+          callback body?.message || "Error Creating work item", body
         else
           @parseReplyData err, res,  body, callback
 
@@ -442,14 +455,21 @@ class exports.Client
     options = { headers: {} }
     options.headers['content-type'] = @getPatchContentType()
     @client.patch path, operations, options, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      if res?.statusCode == 404
+        callback body?.message || "Error Creating work item", body
+      else
+        @parseReplyData err, res,  body, callback
 
   updateWorkItems: (items, callback) ->
     path = @buildApiPath 'wit/workitems'
     options = { headers: {} }
     options.headers['content-type'] = @getPatchContentType()
+
     @client.patch path, items, options, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      if res?.statusCode == 404
+        callback body?.message || "Error Creating work item", body
+      else
+        @parseReplyData err, res,  body, callback
 
   getWorkItemUpdates: (id, pageSize, skip, callback) ->
     if typeof pageSize is 'function'
@@ -505,77 +525,181 @@ class exports.Client
   # Work Item Queries
   #########################################
 
-  getQueries: (projectName, depth, expand, callback) ->
+  getQueries: (projectName, depth, expand, folderPath, includeDeleted, callback) ->
     if typeof depth is 'function'
       callback = depth
-      depth = expand = null
+      depth = expand = folderPath = null
+      includeDeleted = false
     else if typeof expand is 'function'
       callback = expand
-      expand = null
+      expand = folderPath = null
+      includeDeleted = false
+    else if typeof folderPath is 'function'
+      callback = folderPath
+      folderPath = null
+      includeDeleted = false
+    else if typeof includeDeleted is 'function'
+      callback = includeDeleted
+      includeDeleted = false
 
-    params = 'project=' + projectName
+    folderPathParam = ""
+    if @apiVersion == '1.0-preview.1'
+      params = '&project=' + projectName
+    else
+      folderPathParam = @encodeFolderPath folderPath
+
     if depth
       params += '&$depth=' + depth
     if expand
       params += '&$expand=' + expand
 
-    path = @buildApiPath 'wit/queries', params
+    if @apiVersion == '1.0-preview.1'
+      path = @buildApiPath 'wit/queries', params
+    else
+     if includeDeleted
+      params = '&$includeDeleted=' + includeDeleted
+
+     path = @buildProjectScopedApiPath 'wit/queries' + folderPathParam, projectName, params
+
     @client.get path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
-  getQuery: (projectName, queryOrFolderId, depth, expand, callback) ->
-    if typeof depth is 'function'
-      callback = depth
-      depth = expand = null
-    else if typeof expand is 'function'
-      callback = expand
-      expand = null
+  getQuery: (projectName, queryOrFolderId, folderPath, callback) ->
+    if typeof folderPath is 'function'
+      callback = folderPath
+      folderPath = null
 
-    params = ''
-    if depth
-      params = '$depth=' + depth
-    if expand
-      params += '&$expand=' + expand
+    if @apiVersion == '1.0-preview.1'
+      path = @buildApiPath 'wit/queries/' + queryOrFolderId
+    else
+      folderPathParam = @encodeFolderPath folderPath
+      path = @buildProjectScopedApiPath 'wit/queries' + folderPathParam + '/' + queryOrFolderId, projectName
 
-    path = @buildApiPath 'wit/' + projectName + '/queries/' + queryOrFolderId, params
     @client.get path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
-  createQuery: (projectName, name, folderId, wiql, callback) ->
-    query =
-      name: name
-      parentId: folderId
-      wiql: wiql
-    path = @buildApiPath 'wit/' + projectName + '/queries'
+  createQuery: (projectName, name, folderIdOrPath, wiql, callback) ->
+    if @apiVersion == '1.0-preview.1'
+      query =
+        name: name
+        parentId: folderIdOrPath
+        wiql: wiql
+      path = @buildApiPath 'wit/queries'
+    else
+      path = @buildProjectScopedApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) , projectName
+      query =
+        name: name
+        wiql: wiql
+
     @client.post path, query, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
-  updateQuery: (projectName, queryId, name, folderId, wiql, callback) ->
-    query =
-      id: queryId
-      name: name
-      parentId: folderId
-      wiql: wiql
-    path = @buildApiPath 'wit/' + projectName + '/queries/' + queryId
+  updateQuery: (projectName, queryId, name, folderIdOrPath, wiql, callback) ->
+    if @apiVersion == '1.0-preview.1'
+      path = @buildApiPath 'wit/queries/' + queryId
+      query =
+        id: queryId
+        name: name
+        parentId: folderIdOrPath
+        wiql: wiql
+      path = @buildApiPath 'wit/queries'
+    else
+      path = @buildProjectScopedApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) + '/' + queryId , projectName
+      query =
+        name: name
+        wiql: wiql
+
     @client.patch path, query, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
-  createFolder: (projectName, name, parentFolderId, callback) ->
-    folder =
-      name: name
-      parentId: parentFolderId
-      isFolder: true
-    path = @buildApiPath 'wit/' + projectName + '/queries'
+  createFolder: (projectName, name, parentFolderIdOrPath, callback) ->
+    if @apiVersion == '1.0-preview.1'
+      folder =
+        name: name
+        parentId: parentFolderIdOrPath
+        type: "folder"
+      path = @buildApiPath 'wit/queries'
+    else
+      path = @buildProjectScopedApiPath 'wit/queries' + (@encodeFolderPath parentFolderIdOrPath) , projectName
+      folder =
+        name: name
+        isFolder: "true"
+
     @client.post path, folder, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
-  deleteQuery: (projectName, queryId, callback) ->
-    path = @buildApiPath 'wit/' + projectName + '/queries/' + queryId
+  deleteQuery: (projectName, queryIdOrPath, callback) ->
+    if @apiVersion == '1.0-preview.1'
+       path = @buildApiPath 'wit/queries/' + queryIdOrPath
+    else
+      path = @buildProjectScopedApiPath 'wit/queries' + (@encodeFolderPath queryIdOrPath) , projectName
+ 
     @client.del path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
-  deleteFolder: (projectName, folderId, callback) ->
-    @deleteQuery projectName, folderId, callback
+  deleteFolder: (projectName, queryIdOrPath, callback) ->
+    @deleteQuery projectName, queryIdOrPath, callback
+
+  #########################################
+  # Work Items V2 only
+  #########################################
+
+  getWorkItemTypes: (projectName, callback) ->
+    @checkAndRequireMinimumVersion "1.0-preview.2"
+
+    path = @buildApiPath 'wit/' + projectName + '/workitemtypes'
+    @client.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
+  getWorkItemType: (projectName, workItemType, callback) ->
+    @checkAndRequireMinimumVersion "1.0-preview.2"
+
+    path = @buildApiPath 'wit/' + projectName + '/workitemtypes/' + workItemType
+    @client.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
+  getWorkItemRelationTypes: (callback) ->
+    @checkAndRequireMinimumVersion "1.0-preview.2"
+
+    path = @buildApiPath 'wit/workitemrelationtypes'
+    @client.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
+  getWorkItemRelationType: (relationName, callback) ->
+    @checkAndRequireMinimumVersion "1.0-preview.2"
+
+    path = @buildApiPath 'wit/workitemrelationtypes/' + relationName
+    @client.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
+  getWorkItemCategories: (projectName, callback) ->
+    @checkAndRequireMinimumVersion "1.0-preview.2"
+
+    path = @buildApiPath 'wit/' + projectName + '/workitemtypecategories'
+    @client.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
+  getWorkItemCategory: (projectName, categoryName, callback) ->
+    @checkAndRequireMinimumVersion "1.0-preview.2"
+
+    path = @buildApiPath 'wit/' + projectName + '/workitemtypecategories/' + categoryName
+    @client.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
+  getWorkItemFields: (callback) ->
+    @checkAndRequireMinimumVersion "1.0-preview.2"
+
+    path = @buildApiPath 'wit/fields'
+    @client.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
+  getWorkItemField: (referenceName,  callback) ->
+    @checkAndRequireMinimumVersion "1.0-preview.2"
+
+    path = @buildApiPath 'wit/fields/' + referenceName
+    @client.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
 
   #########################################
   # Accounts and Profiles

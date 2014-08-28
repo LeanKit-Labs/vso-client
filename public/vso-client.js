@@ -83,8 +83,8 @@ exports.Client = (function() {
     var apiUrl, spsUrl;
     this.url = url;
     this.collection = collection;
-    apiUrl = url + '/' + collection + '/_apis/';
-    this.client = requestJson.newClient(apiUrl);
+    apiUrl = url;
+    this.client = requestJson.newClient(apiUrl, options != null ? options.clientOptions : void 0);
     if (authentication === AuthenticationCredential || authentication.type === "Credential") {
       this.client.setBasicAuth(authentication.username, authentication.password);
     } else if (authentication === AuthenticationOAuth || authentication.type === "OAuth") {
@@ -105,7 +105,7 @@ exports.Client = (function() {
       return callback(error, body);
     } else if (this._authType === "OAuth" && (res != null ? res.statusCode : void 0) === 203) {
       return callback("Error unauthorized. Check OAUth token", body);
-    } else if (res.statusCode === 401 || (this._authType !== "OAuth" && (res != null ? res.statusCode : void 0) === 203)) {
+    } else if ((res != null ? res.statusCode : void 0) === 401 || (this._authType !== "OAuth" && (res != null ? res.statusCode : void 0) === 203)) {
       return callback("Error unauthorized", body);
     } else if ((res != null ? res.statusCode : void 0) >= 500 && (res != null ? res.statusCode : void 0) < 600) {
       return callback("Error call failed with HTTP Code " + res.statusCode, body);
@@ -167,10 +167,21 @@ exports.Client = (function() {
   };
 
   Client.prototype.buildApiPath = function(path, params) {
+    return this.buildProjectScopedApiPath(path, null, params);
+  };
+
+  Client.prototype.buildProjectScopedApiPath = function(path, projectName, params) {
     var returnPath;
-    returnPath = path + '?api-version=' + this.apiVersion;
+    if (projectName) {
+      returnPath = '/' + this.collection + '/' + (encodeURI(projectName)) + '/_apis/' + path + '?api-version=' + this.apiVersion;
+    } else {
+      returnPath = '/' + this.collection + '/_apis/' + path + '?api-version=' + this.apiVersion;
+    }
     if (params && params.length > 0) {
-      returnPath += '&' + params;
+      if (params[0] !== '&') {
+        params = '&' + params;
+      }
+      returnPath += params;
     }
     return returnPath;
   };
@@ -180,6 +191,15 @@ exports.Client = (function() {
       return 'application/json';
     }
     return 'application/json-patch+json';
+  };
+
+  Client.prototype.encodeFolderPath = function(folderParam) {
+    if (!folderParam) {
+      return "";
+    }
+    return "/" + (folderParam.split("/").map(function(e) {
+      return encodeURI(e);
+    })).join("/");
   };
 
   getVersion = function(version) {
@@ -210,7 +230,6 @@ exports.Client = (function() {
   };
 
   Client.prototype.requireMinimumVersion = function(version, requiredMinimumVersion) {
-    console;
     var majorRequiredVersion, majorVersion, previewRequiredMinimumVersion, previewVersion;
     majorVersion = getVersion(version);
     majorRequiredVersion = getVersion(requiredMinimumVersion);
@@ -232,6 +251,12 @@ exports.Client = (function() {
       return true;
     }
     return false;
+  };
+
+  Client.prototype.checkAndRequireMinimumVersion = function(minimumVersion) {
+    if (!this.requireMinimumVersion(this.apiVersion, minimumVersion)) {
+      throw "this method requires at least @{minimumVersion)";
+    }
   };
 
   Client.prototype.getProjects = function(includeCapabilities, stateFilter, pageSize, skip, callback) {
@@ -450,7 +475,7 @@ exports.Client = (function() {
     var params, path, query;
     if (typeof projectName === 'function') {
       callback = projectName;
-      projectName = 'anything';
+      projectName = null;
     }
     query = {
       id: queryId
@@ -530,11 +555,11 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.createWorkItem = function(item, project, workItemType, callback) {
+  Client.prototype.createWorkItem = function(item, projectName, workItemType, callback) {
     var options, path;
-    if (this.apiVersion === "1.0-preview.1" || this.apiVersion === "1.0-preview") {
+    if (this.apiVersion === "1.0-preview.1") {
       if (callback == null) {
-        callback = project;
+        callback = projectName;
       }
       path = this.buildApiPath('wit/workitems');
       return this.client.post(path, item, (function(_this) {
@@ -550,19 +575,17 @@ exports.Client = (function() {
         };
       })(this));
     } else {
-      this.requireMinimumVersion(this.apiVersion, "1.0-preview.2");
       options = {
         headers: {}
       };
       options.headers['content-type'] = this.getPatchContentType();
-      path = this.buildApiPath("wit/workitems/$" + project + "." + workItemType);
+      path = this.buildProjectScopedApiPath("wit/workitems/$" + workItemType, projectName);
       return this.client.patch(path, item, options, (function(_this) {
         return function(err, res, body) {
-          var _ref;
           if (err) {
             return callback(err, body);
-          } else if (res.statusCode === 400) {
-            return callback(((_ref = body.exception) != null ? _ref.Message : void 0) || "Error Creating work item", body);
+          } else if (res.statusCode === 404) {
+            return callback((body != null ? body.message : void 0) || "Error Creating work item", body);
           } else {
             return _this.parseReplyData(err, res, body, callback);
           }
@@ -580,7 +603,11 @@ exports.Client = (function() {
     options.headers['content-type'] = this.getPatchContentType();
     return this.client.patch(path, operations, options, (function(_this) {
       return function(err, res, body) {
-        return _this.parseReplyData(err, res, body, callback);
+        if ((res != null ? res.statusCode : void 0) === 404) {
+          return callback((body != null ? body.message : void 0) || "Error Creating work item", body);
+        } else {
+          return _this.parseReplyData(err, res, body, callback);
+        }
       };
     })(this));
   };
@@ -594,7 +621,11 @@ exports.Client = (function() {
     options.headers['content-type'] = this.getPatchContentType();
     return this.client.patch(path, items, options, (function(_this) {
       return function(err, res, body) {
-        return _this.parseReplyData(err, res, body, callback);
+        if ((res != null ? res.statusCode : void 0) === 404) {
+          return callback((body != null ? body.message : void 0) || "Error Creating work item", body);
+        } else {
+          return _this.parseReplyData(err, res, body, callback);
+        }
       };
     })(this));
   };
@@ -673,23 +704,44 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.getQueries = function(projectName, depth, expand, callback) {
-    var params, path;
+  Client.prototype.getQueries = function(projectName, depth, expand, folderPath, includeDeleted, callback) {
+    var folderPathParam, params, path;
     if (typeof depth === 'function') {
       callback = depth;
-      depth = expand = null;
+      depth = expand = folderPath = null;
+      includeDeleted = false;
     } else if (typeof expand === 'function') {
       callback = expand;
-      expand = null;
+      expand = folderPath = null;
+      includeDeleted = false;
+    } else if (typeof folderPath === 'function') {
+      callback = folderPath;
+      folderPath = null;
+      includeDeleted = false;
+    } else if (typeof includeDeleted === 'function') {
+      callback = includeDeleted;
+      includeDeleted = false;
     }
-    params = 'project=' + projectName;
+    folderPathParam = "";
+    if (this.apiVersion === '1.0-preview.1') {
+      params = '&project=' + projectName;
+    } else {
+      folderPathParam = this.encodeFolderPath(folderPath);
+    }
     if (depth) {
       params += '&$depth=' + depth;
     }
     if (expand) {
       params += '&$expand=' + expand;
     }
-    path = this.buildApiPath('wit/queries', params);
+    if (this.apiVersion === '1.0-preview.1') {
+      path = this.buildApiPath('wit/queries', params);
+    } else {
+      if (includeDeleted) {
+        params = '&$includeDeleted=' + includeDeleted;
+      }
+      path = this.buildProjectScopedApiPath('wit/queries' + folderPathParam, projectName, params);
+    }
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -697,23 +749,18 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.getQuery = function(projectName, queryOrFolderId, depth, expand, callback) {
-    var params, path;
-    if (typeof depth === 'function') {
-      callback = depth;
-      depth = expand = null;
-    } else if (typeof expand === 'function') {
-      callback = expand;
-      expand = null;
+  Client.prototype.getQuery = function(projectName, queryOrFolderId, folderPath, callback) {
+    var folderPathParam, path;
+    if (typeof folderPath === 'function') {
+      callback = folderPath;
+      folderPath = null;
     }
-    params = '';
-    if (depth) {
-      params = '$depth=' + depth;
+    if (this.apiVersion === '1.0-preview.1') {
+      path = this.buildApiPath('wit/queries/' + queryOrFolderId);
+    } else {
+      folderPathParam = this.encodeFolderPath(folderPath);
+      path = this.buildProjectScopedApiPath('wit/queries' + folderPathParam + '/' + queryOrFolderId, projectName);
     }
-    if (expand) {
-      params += '&$expand=' + expand;
-    }
-    path = this.buildApiPath('wit/' + projectName + '/queries/' + queryOrFolderId, params);
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -721,14 +768,22 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.createQuery = function(projectName, name, folderId, wiql, callback) {
+  Client.prototype.createQuery = function(projectName, name, folderIdOrPath, wiql, callback) {
     var path, query;
-    query = {
-      name: name,
-      parentId: folderId,
-      wiql: wiql
-    };
-    path = this.buildApiPath('wit/' + projectName + '/queries');
+    if (this.apiVersion === '1.0-preview.1') {
+      query = {
+        name: name,
+        parentId: folderIdOrPath,
+        wiql: wiql
+      };
+      path = this.buildApiPath('wit/queries');
+    } else {
+      path = this.buildProjectScopedApiPath('wit/queries' + (this.encodeFolderPath(folderIdOrPath)), projectName);
+      query = {
+        name: name,
+        wiql: wiql
+      };
+    }
     return this.client.post(path, query, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -736,15 +791,24 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.updateQuery = function(projectName, queryId, name, folderId, wiql, callback) {
+  Client.prototype.updateQuery = function(projectName, queryId, name, folderIdOrPath, wiql, callback) {
     var path, query;
-    query = {
-      id: queryId,
-      name: name,
-      parentId: folderId,
-      wiql: wiql
-    };
-    path = this.buildApiPath('wit/' + projectName + '/queries/' + queryId);
+    if (this.apiVersion === '1.0-preview.1') {
+      path = this.buildApiPath('wit/queries/' + queryId);
+      query = {
+        id: queryId,
+        name: name,
+        parentId: folderIdOrPath,
+        wiql: wiql
+      };
+      path = this.buildApiPath('wit/queries');
+    } else {
+      path = this.buildProjectScopedApiPath('wit/queries' + (this.encodeFolderPath(folderIdOrPath)) + '/' + queryId, projectName);
+      query = {
+        name: name,
+        wiql: wiql
+      };
+    }
     return this.client.patch(path, query, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -752,14 +816,22 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.createFolder = function(projectName, name, parentFolderId, callback) {
+  Client.prototype.createFolder = function(projectName, name, parentFolderIdOrPath, callback) {
     var folder, path;
-    folder = {
-      name: name,
-      parentId: parentFolderId,
-      isFolder: true
-    };
-    path = this.buildApiPath('wit/' + projectName + '/queries');
+    if (this.apiVersion === '1.0-preview.1') {
+      folder = {
+        name: name,
+        parentId: parentFolderIdOrPath,
+        type: "folder"
+      };
+      path = this.buildApiPath('wit/queries');
+    } else {
+      path = this.buildProjectScopedApiPath('wit/queries' + (this.encodeFolderPath(parentFolderIdOrPath)), projectName);
+      folder = {
+        name: name,
+        isFolder: "true"
+      };
+    }
     return this.client.post(path, folder, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -767,9 +839,13 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.deleteQuery = function(projectName, queryId, callback) {
+  Client.prototype.deleteQuery = function(projectName, queryIdOrPath, callback) {
     var path;
-    path = this.buildApiPath('wit/' + projectName + '/queries/' + queryId);
+    if (this.apiVersion === '1.0-preview.1') {
+      path = this.buildApiPath('wit/queries/' + queryIdOrPath);
+    } else {
+      path = this.buildProjectScopedApiPath('wit/queries' + (this.encodeFolderPath(queryIdOrPath)), projectName);
+    }
     return this.client.del(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -777,8 +853,96 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.deleteFolder = function(projectName, folderId, callback) {
-    return this.deleteQuery(projectName, folderId, callback);
+  Client.prototype.deleteFolder = function(projectName, queryIdOrPath, callback) {
+    return this.deleteQuery(projectName, queryIdOrPath, callback);
+  };
+
+  Client.prototype.getWorkItemTypes = function(projectName, callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/' + projectName + '/workitemtypes');
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemType = function(projectName, workItemType, callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/' + projectName + '/workitemtypes/' + workItemType);
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemRelationTypes = function(callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/workitemrelationtypes');
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemRelationType = function(relationName, callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/workitemrelationtypes/' + relationName);
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemCategories = function(projectName, callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/' + projectName + '/workitemtypecategories');
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemCategory = function(projectName, categoryName, callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/' + projectName + '/workitemtypecategories/' + categoryName);
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemFields = function(callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/fields');
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemField = function(referenceName, callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/fields/' + referenceName);
+    return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
   };
 
   Client.prototype.getCurrentProfile = function(callback) {
