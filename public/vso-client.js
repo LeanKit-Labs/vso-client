@@ -88,7 +88,7 @@ exports.Client = (function() {
     if (authentication === AuthenticationCredential || authentication.type === "Credential") {
       this.client.setBasicAuth(authentication.username, authentication.password);
     } else if (authentication === AuthenticationOAuth || authentication.type === "OAuth") {
-      spsUrl = ((options != null ? options.spsUri : void 0) || spsUri) + '/_apis/';
+      spsUrl = (options != null ? options.spsUri : void 0) || spsUri;
       this.clientSPS = requestJson.newClient(spsUrl);
       this.client.headers.Authorization = "bearer " + authentication.accessToken;
       this.clientSPS.headers.Authorization = "bearer " + authentication.accessToken;
@@ -166,17 +166,17 @@ exports.Client = (function() {
     }
   };
 
-  Client.prototype.buildApiPath = function(path, params) {
-    return this.buildProjectScopedApiPath(path, null, params);
-  };
-
-  Client.prototype.buildProjectScopedApiPath = function(path, projectName, params) {
-    var returnPath;
-    if (projectName) {
-      returnPath = '/' + this.collection + '/' + (encodeURI(projectName)) + '/_apis/' + path + '?api-version=' + this.apiVersion;
-    } else {
-      returnPath = '/' + this.collection + '/_apis/' + path + '?api-version=' + this.apiVersion;
+  Client.prototype.buildApiPath = function(path, params, options) {
+    var basePath, returnPath;
+    basePath = "";
+    if (!(options != null ? options.excludeCollection : void 0)) {
+      if (options != null ? options.projectName : void 0) {
+        basePath = '/' + this.collection + '/' + (encodeURI(options.projectName));
+      } else {
+        basePath = '/' + this.collection;
+      }
     }
+    returnPath = basePath + '/_apis/' + path + '?api-version=' + this.apiVersion;
     if (params && params.length > 0) {
       if (params[0] !== '&') {
         params = '&' + params;
@@ -579,7 +579,9 @@ exports.Client = (function() {
         headers: {}
       };
       options.headers['content-type'] = this.getPatchContentType();
-      path = this.buildProjectScopedApiPath("wit/workitems/$" + workItemType, projectName);
+      path = this.buildApiPath("wit/workitems/$" + workItemType, null, {
+        projectName: projectName
+      });
       return this.client.patch(path, item, options, (function(_this) {
         return function(err, res, body) {
           if (err) {
@@ -742,7 +744,9 @@ exports.Client = (function() {
       if (includeDeleted) {
         params = '&$includeDeleted=' + includeDeleted;
       }
-      path = this.buildProjectScopedApiPath('wit/queries' + folderPathParam, projectName, params);
+      path = this.buildApiPath('wit/queries' + folderPathParam, params, {
+        projectName: projectName
+      });
     }
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
@@ -761,7 +765,9 @@ exports.Client = (function() {
       path = this.buildApiPath('wit/queries/' + queryOrFolderId);
     } else {
       folderPathParam = this.encodeFolderPath(folderPath);
-      path = this.buildProjectScopedApiPath('wit/queries' + folderPathParam + '/' + queryOrFolderId, projectName);
+      path = this.buildApiPath('wit/queries' + folderPathParam + '/' + queryOrFolderId, null, {
+        projectName: projectName
+      });
     }
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
@@ -780,7 +786,9 @@ exports.Client = (function() {
       };
       path = this.buildApiPath('wit/queries');
     } else {
-      path = this.buildProjectScopedApiPath('wit/queries' + (this.encodeFolderPath(folderIdOrPath)), projectName);
+      path = this.buildApiPath('wit/queries' + (this.encodeFolderPath(folderIdOrPath)), null, {
+        projectName: projectName
+      });
       query = {
         name: name,
         wiql: wiql
@@ -805,7 +813,9 @@ exports.Client = (function() {
       };
       path = this.buildApiPath('wit/queries');
     } else {
-      path = this.buildProjectScopedApiPath('wit/queries' + (this.encodeFolderPath(folderIdOrPath)) + '/' + queryId, projectName);
+      path = this.buildApiPath('wit/queries' + (this.encodeFolderPath(folderIdOrPath)) + '/' + queryId, null, {
+        projectName: projectName
+      });
       query = {
         name: name
       };
@@ -830,7 +840,9 @@ exports.Client = (function() {
       };
       path = this.buildApiPath('wit/queries');
     } else {
-      path = this.buildProjectScopedApiPath('wit/queries' + (this.encodeFolderPath(parentFolderIdOrPath)), projectName);
+      path = this.buildApiPath('wit/queries' + (this.encodeFolderPath(parentFolderIdOrPath)), null, {
+        projectName: projectName
+      });
       folder = {
         name: name,
         isFolder: "true"
@@ -848,7 +860,9 @@ exports.Client = (function() {
     if (this.apiVersion === '1.0-preview.1') {
       path = this.buildApiPath('wit/queries/' + queryIdOrPath);
     } else {
-      path = this.buildProjectScopedApiPath('wit/queries' + (this.encodeFolderPath(queryIdOrPath)), projectName);
+      path = this.buildApiPath('wit/queries' + (this.encodeFolderPath(queryIdOrPath)), null, {
+        projectName: projectName
+      });
     }
     return this.client.del(path, (function(_this) {
       return function(err, res, body) {
@@ -864,7 +878,9 @@ exports.Client = (function() {
   Client.prototype.getWorkItemTypes = function(projectName, callback) {
     var path;
     this.checkAndRequireMinimumVersion("1.0-preview.2");
-    path = this.buildProjectScopedApiPath('wit/workitemtypes', projectName);
+    path = this.buildApiPath('wit/workitemtypes', null, {
+      projectName: projectName
+    });
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -875,7 +891,9 @@ exports.Client = (function() {
   Client.prototype.getWorkItemType = function(projectName, workItemType, callback) {
     var path;
     this.checkAndRequireMinimumVersion("1.0-preview.2");
-    path = this.buildProjectScopedApiPath('wit/workitemtypes/' + workItemType, projectName);
+    path = this.buildApiPath('wit/workitemtypes/' + workItemType, null, {
+      projectName: projectName
+    });
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -908,7 +926,9 @@ exports.Client = (function() {
   Client.prototype.getWorkItemCategories = function(projectName, callback) {
     var path;
     this.checkAndRequireMinimumVersion("1.0-preview.2");
-    path = this.buildProjectScopedApiPath('wit/workitemtypecategories', projectName);
+    path = this.buildApiPath('wit/workitemtypecategories', null, {
+      projectName: projectName
+    });
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -919,7 +939,9 @@ exports.Client = (function() {
   Client.prototype.getWorkItemCategory = function(projectName, categoryName, callback) {
     var path;
     this.checkAndRequireMinimumVersion("1.0-preview.2");
-    path = this.buildProjectScopedApiPath('wit/workitemtypecategories/' + categoryName, projectName);
+    path = this.buildApiPath('wit/workitemtypecategories/' + categoryName, null, {
+      projectName: projectName
+    });
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -952,7 +974,9 @@ exports.Client = (function() {
   Client.prototype.getCurrentProfile = function(callback) {
     var path;
     this.checkAndRequireOAuth("getCurrentProfile");
-    path = this.buildApiPath('profile/profiles/me');
+    path = this.buildApiPath('profile/profiles/me', null, {
+      excludeCollection: true
+    });
     return this.clientSPS.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);

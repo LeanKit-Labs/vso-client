@@ -48,7 +48,7 @@ class exports.Client
     if (authentication is AuthenticationCredential || authentication.type == "Credential")
       @client.setBasicAuth authentication.username, authentication.password
     else if (authentication is AuthenticationOAuth || authentication.type == "OAuth")
-      spsUrl = (options?.spsUri || spsUri)+ '/_apis/'
+      spsUrl = (options?.spsUri || spsUri)
       @clientSPS = requestJson.newClient(spsUrl)
       @client.headers.Authorization = "bearer " + authentication.accessToken
       @clientSPS.headers.Authorization = "bearer " + authentication.accessToken
@@ -112,20 +112,20 @@ class exports.Client
     if (@_authType != "OAuth")
       throw methodName + " can only be invoked with OAuth"
 
-  buildApiPath : (path, params) ->
-    @buildProjectScopedApiPath path, null, params
+  buildApiPath : (path, params, options) ->
+    basePath = ""
+    unless options?.excludeCollection
+      if options?.projectName
+        basePath = '/'+ @collection + '/' + (encodeURI options.projectName)
+      else
+        basePath = '/'+ @collection
 
-  buildProjectScopedApiPath : (path, projectName, params) ->
-    if projectName
-      returnPath = '/'+ @collection + '/' + (encodeURI projectName) + '/_apis/' + path + '?api-version=' + @apiVersion
-    else
-      returnPath = '/'+ @collection + '/_apis/' + path + '?api-version=' + @apiVersion
+    returnPath = basePath + '/_apis/' + path + '?api-version=' + @apiVersion
 
     if params and params.length > 0
       if (params[0] != '&')
         params = '&' + params
       returnPath += params
-    # console.log returnPath
     returnPath
 
   getPatchContentType : ->
@@ -438,7 +438,7 @@ class exports.Client
     else # 1.0-preview.2 or greater
       options = { headers: {} }
       options.headers['content-type'] = @getPatchContentType()
-      path = @buildProjectScopedApiPath "wit/workitems/$#{workItemType}", projectName
+      path = @buildApiPath "wit/workitems/$#{workItemType}", null, { projectName : projectName }
 
       @client.patch path, item, options, (err, res, body) =>
         if err
@@ -557,7 +557,7 @@ class exports.Client
      if includeDeleted
       params = '&$includeDeleted=' + includeDeleted
 
-     path = @buildProjectScopedApiPath 'wit/queries' + folderPathParam, projectName, params
+     path = @buildApiPath 'wit/queries' + folderPathParam, params, { projectName : projectName }
 
     @client.get path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
@@ -571,7 +571,7 @@ class exports.Client
       path = @buildApiPath 'wit/queries/' + queryOrFolderId
     else
       folderPathParam = @encodeFolderPath folderPath
-      path = @buildProjectScopedApiPath 'wit/queries' + folderPathParam + '/' + queryOrFolderId, projectName
+      path = @buildApiPath 'wit/queries' + folderPathParam + '/' + queryOrFolderId, null, { projectName : projectName }
 
     @client.get path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
@@ -584,7 +584,7 @@ class exports.Client
         wiql: wiql
       path = @buildApiPath 'wit/queries'
     else
-      path = @buildProjectScopedApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) , projectName
+      path = @buildApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) , null, { projectName : projectName }
       query =
         name: name
         wiql: wiql
@@ -602,7 +602,7 @@ class exports.Client
         wiql: wiql
       path = @buildApiPath 'wit/queries'
     else
-      path = @buildProjectScopedApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) + '/' + queryId , projectName
+      path = @buildApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) + '/' + queryId , null, { projectName : projectName }
       query =
         name: name
       wiql: wiql
@@ -618,7 +618,7 @@ class exports.Client
         type: "folder"
       path = @buildApiPath 'wit/queries'
     else
-      path = @buildProjectScopedApiPath 'wit/queries' + (@encodeFolderPath parentFolderIdOrPath) , projectName
+      path = @buildApiPath 'wit/queries' + (@encodeFolderPath parentFolderIdOrPath) , null, { projectName : projectName }
       folder =
         name: name
         isFolder: "true"
@@ -630,7 +630,7 @@ class exports.Client
     if @apiVersion == '1.0-preview.1'
        path = @buildApiPath 'wit/queries/' + queryIdOrPath
     else
-      path = @buildProjectScopedApiPath 'wit/queries' + (@encodeFolderPath queryIdOrPath) , projectName
+      path = @buildApiPath 'wit/queries' + (@encodeFolderPath queryIdOrPath) , null, { projectName : projectName }
 
     @client.del path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
@@ -645,14 +645,14 @@ class exports.Client
   getWorkItemTypes: (projectName, callback) ->
     @checkAndRequireMinimumVersion "1.0-preview.2"
 
-    path = @buildProjectScopedApiPath 'wit/workitemtypes', projectName
+    path = @buildApiPath 'wit/workitemtypes', null, { projectName : projectName }
     @client.get path, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
   getWorkItemType: (projectName, workItemType, callback) ->
     @checkAndRequireMinimumVersion "1.0-preview.2"
 
-    path = @buildProjectScopedApiPath 'wit/workitemtypes/' + workItemType, projectName
+    path = @buildApiPath 'wit/workitemtypes/' + workItemType, null, { projectName : projectName }
     @client.get path, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
@@ -673,14 +673,14 @@ class exports.Client
   getWorkItemCategories: (projectName, callback) ->
     @checkAndRequireMinimumVersion "1.0-preview.2"
 
-    path = @buildProjectScopedApiPath 'wit/workitemtypecategories', projectName
+    path = @buildApiPath 'wit/workitemtypecategories', null, { projectName : projectName }
     @client.get path, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
   getWorkItemCategory: (projectName, categoryName, callback) ->
     @checkAndRequireMinimumVersion "1.0-preview.2"
 
-    path = @buildProjectScopedApiPath 'wit/workitemtypecategories/' + categoryName, projectName
+    path = @buildApiPath 'wit/workitemtypecategories/' + categoryName, null, { projectName : projectName }
     @client.get path, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
@@ -705,7 +705,7 @@ class exports.Client
 
   getCurrentProfile: (callback) ->
     @checkAndRequireOAuth "getCurrentProfile"
-    path = @buildApiPath 'profile/profiles/me'
+    path = @buildApiPath 'profile/profiles/me', null, {excludeCollection : true }
     @clientSPS.get path, (err, res, body) =>
       @parseReplyData err, res,  body, callback
 
