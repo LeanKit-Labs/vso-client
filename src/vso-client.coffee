@@ -49,7 +49,7 @@ class exports.Client
       @client.setBasicAuth authentication.username, authentication.password
     else if (authentication is AuthenticationOAuth || authentication.type == "OAuth")
       spsUrl = (options?.spsUri || spsUri)
-      @clientSPS = requestJson.newClient(spsUrl)
+      @clientSPS = requestJson.newClient(spsUrl, options?.clientOptions)
       @client.headers.Authorization = "bearer " + authentication.accessToken
       @clientSPS.headers.Authorization = "bearer " + authentication.accessToken
     else

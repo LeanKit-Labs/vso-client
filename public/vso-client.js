@@ -89,7 +89,7 @@ exports.Client = (function() {
       this.client.setBasicAuth(authentication.username, authentication.password);
     } else if (authentication === AuthenticationOAuth || authentication.type === "OAuth") {
       spsUrl = (options != null ? options.spsUri : void 0) || spsUri;
-      this.clientSPS = requestJson.newClient(spsUrl);
+      this.clientSPS = requestJson.newClient(spsUrl, options != null ? options.clientOptions : void 0);
       this.client.headers.Authorization = "bearer " + authentication.accessToken;
       this.clientSPS.headers.Authorization = "bearer " + authentication.accessToken;
     } else {
