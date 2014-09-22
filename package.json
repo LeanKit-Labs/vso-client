@@ -8,8 +8,12 @@
   },
   "author": "David Neal <david@reverentgeek.com> (http://reverentgeek.com)",
   "contributors": [
-    { "name": "Tiago Pascoal" },
-    { "name": "Rob Maher" }
+    {
+      "name": "Tiago Pascoal"
+    },
+    {
+      "name": "Rob Maher"
+    }
   ],
   "license": "MIT",
   "devDependencies": {
@@ -22,9 +26,10 @@
     "gulp-util": "~2.2.14"
   },
   "dependencies": {
+    "azure": "^0.9.16",
     "lodash": "~2.4.1",
-    "request-json": "~0.4.11",
-    "request": "~2.36.0"
+    "request": "~2.36.0",
+    "request-json": "~0.4.11"
   },
   "bugs": {
     "url": "https://github.com/LeanKit-Labs/vso-client/issues",
@@ -34,5 +39,9 @@
     "type": "git",
     "url": "https://github.com/LeanKit-Labs/vso-client"
   },
-  "keywords": [ "tfs", "visualstudio", "visualstudioonline" ]
+  "keywords": [
+    "tfs",
+    "visualstudio",
+    "visualstudioonline"
+  ]
 }

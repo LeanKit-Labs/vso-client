@@ -1,6 +1,7 @@
 _ = require 'lodash'
 requestJson = require 'request-json'
 request = require "request"
+azure = require 'azure'
 
 apiVersion = '1.0-preview.1'
 
@@ -27,11 +28,30 @@ requestToken = (clientAssertion, assertion, grantType, redirectUri, callback, to
     else
       callback err, JSON.parse body
 
+
+requestWrapToken = (accountUrl, username, password, callback) ->
+  request
+    url: accountUrl,
+    followRedirect: false
+    (err, res, body) -> 
+      return callback err, body, res if err
+      realm = res.headers['x-tfs-fedauthrealm'];
+      issuer = res.headers['x-tfs-fedauthissuer'];
+      
+      return callback "Can't determine Federation data on headers", body, res unless realm and issuer
+      
+      wrapService = azure.createWrapService issuer, username, password
+      wrapService.wrapAccessToken realm, (err, token, res) ->
+        callback err, (if err then res.body else token), res
+
+
 exports.createClient = (url, collection, username, password, options) -> new exports.Client url, collection, (new AuthenticationCredential  username, password), options
 exports.createOAuthClient = (url, collection, accessToken, options) -> new exports.Client url, collection, (new  AuthenticationOAuth accessToken), options
+exports.createWrapClient = (url, collection, accessToken, options) -> new exports.Client url, collection, (new  AuthenticationWrap accessToken), options
 
 exports.getToken = (clientAssertion, assertion, redirectUri, callback, tokenUri = vsoTokenUri) -> requestToken(clientAssertion, assertion, "urn:ietf:params:oauth:grant-type:jwt-bearer", redirectUri, callback, tokenUri)
 exports.refreshToken = (clientAssertion, assertion, redirectUri, callback, tokenUri = vsoTokenUri) -> requestToken(clientAssertion, assertion, "refresh_token", redirectUri, callback, tokenUri)
+exports.getWrapToken = (accountUrl, username, password, callback) -> requestWrapToken accountUrl, username, password, callback
 
 class AuthenticationCredential
   constructor: (@username, @password) ->
@@ -40,6 +60,11 @@ class AuthenticationCredential
 class AuthenticationOAuth
   constructor: (@accessToken) ->
     @type = "OAuth"
+
+class AuthenticationWrap
+  constructor: (@accessToken) ->
+    @type = "Wrap"
+    
 
 class exports.Client
   constructor: (@url, @collection, authentication, options) ->
@@ -52,6 +77,8 @@ class exports.Client
       @clientSPS = requestJson.newClient(spsUrl, options?.clientOptions)
       @client.headers.Authorization = "bearer " + authentication.accessToken
       @clientSPS.headers.Authorization = "bearer " + authentication.accessToken
+    else if (authentication is AuthenticationWrap || authentication.type == "Wrap")
+      @client.headers.Authorization = "WRAP access_token=\"#{authentication.accessToken}\""
     else
       throw "unknown authentication type"
     @_authType = authentication.type
@@ -101,9 +128,13 @@ class exports.Client
     field
 
   setAccessToken : (acessToken) ->
-    if (@_authType != "OAuth")
-      throw "can only set access token for OAuth client"
-    @client.headers.Authorization = "bearer " + acessToken
+    if (@_authType != "OAuth" and @_authType != "Wrap")
+      throw "can only set access token for OAuth or Wrap client"
+      
+    if @_authType is "OAuth"
+      @client.headers.Authorization = "bearer #{acessToken}"
+    else
+      @client.headers.Authorization = "WRAP access_token=\"#{acessToken}\""
 
   setVersion : (version) ->
     @apiVersion = version
