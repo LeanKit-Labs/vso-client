@@ -462,7 +462,10 @@ describe('VSO Client Tests Preview.1', function () {
 
     describe('Queries', function () {
 
-        var myQueries = testQuery = testFolder = myBugsQuery = null;
+        var myQueries = null;
+        var testQuery = null;
+        var testFolder = null;
+        var myBugsQuery = null;
 
         before(function (done) {
             client.getProjects(function (err, projects) {
@@ -619,7 +622,9 @@ describe('VSO Client Tests Preview.1', function () {
     });
 
     describe('Work Item Tests', function () {
-        var testItemIds = testItemIdArray = testItemId = null;
+        var testItemIds = null;
+        var testItemIdArray = null;
+        var testItemId = null;
 
         // ---------------------------------------
         // Work Item Queries
@@ -709,9 +714,12 @@ describe('VSO Client Tests Preview.1', function () {
                     item.should.have.property('id');
                     item.should.have.property('rev');
                     item.should.have.property('url');
-                    item.should.have.property('_links');
+                    item.should.have.property('links');
                     should.exist(item.fields);
-                    item.fields.should.have.property('System.Id');
+                    var systemIdField = _.find(item.fields, function (field) {
+                      return field.field.refName === 'System.Id';
+                    });
+                    should.exist(systemIdField);
                     should.exist(item.links);
                     item.links.length.should.be.above(0);
                     testItemId = item.id;
@@ -882,7 +890,8 @@ describe('VSO Client Tests Preview.1', function () {
             });
         });
 
-        var testCommitId = testChangeSet = null;
+        var testCommitId = null;
+        var testChangeSet = null;
 
         it('should return changesets', function (done) {
             client.getChangeSets(function (err, changesets) {
@@ -1104,7 +1113,10 @@ describe('VSO Client Tests Preview.1', function () {
         // Git Repositories
         // ---------------------------------------
 
-        var testRepoName = testRepository = testGitProject = testCommit = null;
+        var testRepoName = null;
+        var testRepository = null;
+        var testGitProject = null;
+        var testCommit = null;
 
         before(function (done) {
             testRepoName = 'testRepo-' + (Math.random() + 1).toString(36).substring(7);
@@ -1752,7 +1764,9 @@ describe('VSO Client Tests Preview.2', function () {
     });
 
     describe('Work Item Tests', function () {
-        var testItemIds = testItemIdArray = testItemId = null;
+        var testItemIds = null;
+        var testItemIdArray = null;
+        var testItemId = null;
 
         // ---------------------------------------
         // Work Item Queries
