@@ -1,10 +1,12 @@
-var AuthenticationCredential, AuthenticationOAuth, apiVersion, request, requestJson, requestToken, spsUri, vsoTokenUri, _;
+var AuthenticationCredential, AuthenticationOAuth, AuthenticationWrap, apiVersion, azure, request, requestJson, requestToken, requestWrapToken, spsUri, vsoTokenUri, _;
 
 _ = require('lodash');
 
 requestJson = require('request-json');
 
 request = require("request");
+
+azure = require('azure');
 
 apiVersion = '1.0-preview.1';
 
@@ -33,12 +35,37 @@ requestToken = function(clientAssertion, assertion, grantType, redirectUri, call
   });
 };
 
+requestWrapToken = function(accountUrl, username, password, callback) {
+  return request({
+    url: accountUrl,
+    followRedirect: false
+  }, function(err, res, body) {
+    var issuer, realm, wrapService;
+    if (err) {
+      return callback(err, body, res);
+    }
+    realm = res.headers['x-tfs-fedauthrealm'];
+    issuer = res.headers['x-tfs-fedauthissuer'];
+    if (!(realm && issuer)) {
+      return callback("Can't determine Federation data on headers", body, res);
+    }
+    wrapService = azure.createWrapService(issuer, username, password);
+    return wrapService.wrapAccessToken(realm, function(err, token, res) {
+      return callback(err, (err ? res.body : token), res);
+    });
+  });
+};
+
 exports.createClient = function(url, collection, username, password, options) {
   return new exports.Client(url, collection, new AuthenticationCredential(username, password), options);
 };
 
 exports.createOAuthClient = function(url, collection, accessToken, options) {
   return new exports.Client(url, collection, new AuthenticationOAuth(accessToken), options);
+};
+
+exports.createWrapClient = function(url, collection, accessToken, options) {
+  return new exports.Client(url, collection, new AuthenticationWrap(accessToken), options);
 };
 
 exports.getToken = function(clientAssertion, assertion, redirectUri, callback, tokenUri) {
@@ -53,6 +80,10 @@ exports.refreshToken = function(clientAssertion, assertion, redirectUri, callbac
     tokenUri = vsoTokenUri;
   }
   return requestToken(clientAssertion, assertion, "refresh_token", redirectUri, callback, tokenUri);
+};
+
+exports.getWrapToken = function(accountUrl, username, password, callback) {
+  return requestWrapToken(accountUrl, username, password, callback);
 };
 
 AuthenticationCredential = (function() {
@@ -76,6 +107,16 @@ AuthenticationOAuth = (function() {
 
 })();
 
+AuthenticationWrap = (function() {
+  function AuthenticationWrap(accessToken) {
+    this.accessToken = accessToken;
+    this.type = "Wrap";
+  }
+
+  return AuthenticationWrap;
+
+})();
+
 exports.Client = (function() {
   var getMinorVersion, getVersion, getVersionStage;
 
@@ -92,6 +133,8 @@ exports.Client = (function() {
       this.clientSPS = requestJson.newClient(spsUrl, options != null ? options.clientOptions : void 0);
       this.client.headers.Authorization = "bearer " + authentication.accessToken;
       this.clientSPS.headers.Authorization = "bearer " + authentication.accessToken;
+    } else if (authentication === AuthenticationWrap || authentication.type === "Wrap") {
+      this.client.headers.Authorization = "WRAP access_token=\"" + authentication.accessToken + "\"";
     } else {
       throw "unknown authentication type";
     }
@@ -150,10 +193,14 @@ exports.Client = (function() {
   };
 
   Client.prototype.setAccessToken = function(acessToken) {
-    if (this._authType !== "OAuth") {
-      throw "can only set access token for OAuth client";
+    if (this._authType !== "OAuth" && this._authType !== "Wrap") {
+      throw "can only set access token for OAuth or Wrap client";
     }
-    return this.client.headers.Authorization = "bearer " + acessToken;
+    if (this._authType === "OAuth") {
+      return this.client.headers.Authorization = "bearer " + acessToken;
+    } else {
+      return this.client.headers.Authorization = "WRAP access_token=\"" + acessToken + "\"";
+    }
   };
 
   Client.prototype.setVersion = function(version) {

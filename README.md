@@ -122,6 +122,9 @@ The VSO client is written in [CoffeeScript](http://coffeescript.org/). To modify
       export VSO_COLLECTION=your-project-collection
       export VSO_USER=your-username
       export VSO_PWD=your-password
+      export VSO_SERVICE_ACCOUNT_USER=service-account-username
+      export VSO_SERVICE_ACCOUNT_PWD=service-account-password
+
 
   **Windows**
 
@@ -129,8 +132,13 @@ The VSO client is written in [CoffeeScript](http://coffeescript.org/). To modify
       setx VSO_COLLECTION "your-project-collection"
       setx VSO_USER "your-username"
       setx VSO_PWD "your-password"
+      setx VSO_SERVICE_ACCOUNT_USER=service-account-username
+      setx VSO_SERVICE_ACCOUNT_PWD=service-account-password
 
-	**Note**: On Windows, you will need to reopen your command prompt after setting environment variables.
+
+    **Notes**
+    - On Windows, you will need to reopen your command prompt after setting environment variables.
+    - To get a Visual Studio Online service account you can use the [TFS Service Crendential Viewer](http://nakedalm.com/getting-service-account-vso-tfs-service-credential-viewer/)
 
 * Keep `gulp` running to compile the `/src` folder and run mocha tests in the `/spec` folder.
 
