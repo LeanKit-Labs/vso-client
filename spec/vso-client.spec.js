@@ -11,6 +11,8 @@ var mocha = require('mocha'),
     collection = process.env.VSO_COLLECTION || 'DefaultCollection',
     username = process.env.VSO_USER || 'your-username',
     password = process.env.VSO_PWD || 'your-password';
+    serviceAccountUser = process.env.VSO_SERVICE_ACCOUNT_USER || 'your service account username',
+    serviceAccountPassword = process.env.VSO_SERVICE_ACCOUNT_PWD || 'your service account password';
 proxy = process.env.VSO_PROXY;
 testProjectName = process.env.VSO_TEST_PROJECT || 'TFS INTEGRATION';
 
@@ -1995,3 +1997,72 @@ describe('VSO Client Tests Preview.2', function () {
     });
 
 });
+
+describe('VSO Service Account Tests', function () {
+    this.timeout(20000);
+
+    it('should have a WRAP valid client', function () {
+        var client = Client.createWrapClient(url, collection, "dummy wrap token", getOptions());
+        should.exist(client);
+        client.should.have.property('url');
+        client.should.have.property('_authType');
+        client._authType.should.equal('Wrap');
+        should.exist(client.client)
+    });
+
+    describe('Request WRAP Token Tests', function () {
+
+        it('should return a WRAP valid token', function (done) {
+            Client.getWrapToken(url, serviceAccountUser, serviceAccountPassword, function (err, data, resp) {
+                should.not.exist(err);
+                data.should.have.property('wrap_access_token');
+                data.should.have.property('wrap_access_token_expires_in');
+                done();
+            });
+        });
+
+        it('should return an error with 401', function (done) {
+            Client.getWrapToken(url, "dummy user", "dummy password", function (err, data, resp) {
+                should.exist(err);
+                err.statusCode.should.equal(401);
+                done();
+            });
+        });
+    });
+
+    describe('API calls with WRAP Token Tests', function() {
+        var client;
+
+        before(function (done) {
+            Client.getWrapToken(url, serviceAccountUser, serviceAccountPassword, function (err, data, resp) {
+                if (err) {
+                    console.log("Can't get WRAP token");
+                    throw err;
+                }
+                client = Client.createWrapClient(url, collection, data.wrap_access_token, getOptions());
+                done();
+            });
+        });
+
+
+        it('should return a list of projects', function (done) {
+            client.getProjects(function (err, projects) {
+                should.not.exist(err);
+                should.exist(projects);
+                // console.log(projects);
+                projects.length.should.be.above(0);
+                var project = _.find(projects, function (p) {
+                    return p.name === testProjectName;
+                });
+                project.should.have.property('id');
+                project.should.have.property('name');
+                project.should.have.property('url');
+                should.exist(project.collection);
+                should.exist(project.defaultTeam);
+                done();
+            });
+        });
+
+    });
+});
+
