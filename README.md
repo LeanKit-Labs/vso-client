@@ -138,7 +138,7 @@ The VSO client is written in [CoffeeScript](http://coffeescript.org/). To modify
 
     **Notes**
     - On Windows, you will need to reopen your command prompt after setting environment variables.
-    - To get a Visual Studio Online service account you can use the [TFS Service Crendential Viewer](http://nakedalm.com/getting-service-account-vso-tfs-service-credential-viewer/)
+    - To get a Visual Studio Online service account you can use the [TFS Service Credential Viewer](http://nakedalm.com/getting-service-account-vso-tfs-service-credential-viewer/)
 
 * Keep `gulp` running to compile the `/src` folder and run mocha tests in the `/spec` folder.
 

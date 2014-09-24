@@ -10,7 +10,7 @@ var mocha = require('mocha'),
     url = process.env.VSO_URL || 'https://your-account.visualstudio.com/',
     collection = process.env.VSO_COLLECTION || 'DefaultCollection',
     username = process.env.VSO_USER || 'your-username',
-    password = process.env.VSO_PWD || 'your-password';
+    password = process.env.VSO_PWD || 'your-password',
     serviceAccountUser = process.env.VSO_SERVICE_ACCOUNT_USER || 'your service account username',
     serviceAccountPassword = process.env.VSO_SERVICE_ACCOUNT_PWD || 'your service account password';
 proxy = process.env.VSO_PROXY;
@@ -19,11 +19,11 @@ testProjectName = process.env.VSO_TEST_PROJECT || 'TFS INTEGRATION';
 function getOptions(overrideVersion) {
     options = {
         apiVersion: overrideVersion || "1.0-preview.1"
-    }
+    };
     if (typeof (proxy) !== "undefined" || proxy !== null) {
         options.clientOptions = {
             proxy: proxy
-        }
+        };
     }
 
     return options;
@@ -137,8 +137,8 @@ describe('VSO Client Tests Preview.1', function () {
         client.should.have.property('url');
         client.should.have.property('_authType');
         client._authType.should.equal('Credential');
-        should.exist(client.client)
-        should.not.exist(client.clientSPS)
+        should.exist(client.client);
+        should.not.exist(client.clientSPS);
     });
 
     it('should have a OAuth valid client', function () {
@@ -146,19 +146,19 @@ describe('VSO Client Tests Preview.1', function () {
         clientOAuth.should.have.property('url');
         clientOAuth.should.have.property('_authType');
         clientOAuth._authType.should.equal('OAuth');
-        should.exist(clientOAuth.client)
-        should.exist(clientOAuth.clientSPS)
+        should.exist(clientOAuth.client);
+        should.exist(clientOAuth.clientSPS);
     });
 
     it('should have overriden version', function () {
-        var version = "1.0-preview-unitTest"
+        var version = "1.0-preview-unitTest";
         clientWithVersion = Client.createClient(url, collection, username, password, { apiVersion: version });
 
         clientWithVersion.apiVersion.should.equal(version);
     });
 
     it('should have default version', function () {
-        var expectedVersion = "1.0-preview.1"
+        var expectedVersion = "1.0-preview.1";
         clientWithVersion = Client.createClient(url, collection, username, password);
 
         clientWithVersion.apiVersion.should.equal(expectedVersion);
@@ -783,7 +783,7 @@ describe('VSO Client Tests Preview.1', function () {
                 should.exist(updates);
                 //console.log(updates);
                 updates.length.should.equal(2);
-                updates[updates.length - 1].rev.should.be.above(1)
+                updates[updates.length - 1].rev.should.be.above(1);
                 done();
             });
         });
@@ -1197,7 +1197,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository')
+                console.log('Warning: missing test repository');
                 done();
             }
         });
@@ -1214,7 +1214,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository')
+                console.log('Warning: missing test repository');
                 done();
             }
         });
@@ -1232,7 +1232,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository')
+                console.log('Warning: missing test repository');
                 done();
             }
         });
@@ -1245,7 +1245,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository')
+                console.log('Warning: missing test repository');
                 done();
             }
         });
@@ -1282,7 +1282,7 @@ describe('VSO Client Tests Preview.1', function () {
                     }
                 });
             } else {
-                console.log('Warning: missing test project')
+                console.log('Warning: missing test project');
                 done();
             }
         });
@@ -1320,7 +1320,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository and commit')
+                console.log('Warning: missing test repository and commit');
                 done();
             }
         });
@@ -1336,7 +1336,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository and commit')
+                console.log('Warning: missing test repository and commit');
                 done();
             }
         });
@@ -1355,7 +1355,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository')
+                console.log('Warning: missing test repository');
                 done();
             }
         });
@@ -1371,7 +1371,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository')
+                console.log('Warning: missing test repository');
                 done();
             }
         });
@@ -1387,7 +1387,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository')
+                console.log('Warning: missing test repository');
                 done();
             }
         });
@@ -1407,7 +1407,7 @@ describe('VSO Client Tests Preview.1', function () {
                     done();
                 });
             } else {
-                console.log('Warning: missing test repository')
+                console.log('Warning: missing test repository');
                 done();
             }
         });
@@ -1607,7 +1607,7 @@ describe('VSO Client Tests Preview.1', function () {
                 should.not.exist(err);
                 should.exist(buildResponse);
                 buildResponse.length.should.be.above(0);
-                buildResponse.should.have.property('status')
+                buildResponse.should.have.property('status');
                 done();
             });
         });
@@ -1636,7 +1636,10 @@ describe('VSO Client Tests Preview.2', function () {
         done();
     });
 
-    var myQueries = testQuery = testFolder = myBugsQuery = null;
+    var myQueries = null;
+    var testQuery = null;
+    var testFolder = null;
+    var myBugsQuery = null;
 
     describe('Work Item Query Tests', function () {
 
@@ -1912,7 +1915,7 @@ describe('VSO Client Tests Preview.2', function () {
                 should.exist(updates);
                 //console.log(updates);
                 updates.length.should.equal(2);
-                updates[updates.length - 1].rev.should.be.above(1)
+                updates[updates.length - 1].rev.should.be.above(1);
                 done();
             });
         });
@@ -2021,7 +2024,7 @@ describe('VSO Service Account Tests', function () {
         client.should.have.property('url');
         client.should.have.property('_authType');
         client._authType.should.equal('Wrap');
-        should.exist(client.client)
+        should.exist(client.client);
     });
 
     describe('Request WRAP Token Tests', function () {
@@ -2079,4 +2082,3 @@ describe('VSO Service Account Tests', function () {
 
     });
 });
-
