@@ -33,13 +33,13 @@ requestWrapToken = (accountUrl, username, password, callback) ->
   request
     url: accountUrl,
     followRedirect: false
-    (err, res, body) -> 
+    (err, res, body) ->
       return callback err, body, res if err
       realm = res.headers['x-tfs-fedauthrealm'];
       issuer = res.headers['x-tfs-fedauthissuer'];
-      
+
       return callback "Can't determine Federation data on headers", body, res unless realm and issuer
-      
+
       wrapService = azure.createWrapService issuer, username, password
       wrapService.wrapAccessToken realm, (err, token, res) ->
         callback err, (if err then res.body else token), res
@@ -64,7 +64,7 @@ class AuthenticationOAuth
 class AuthenticationWrap
   constructor: (@accessToken) ->
     @type = "Wrap"
-    
+
 
 class exports.Client
   constructor: (@url, @collection, authentication, options) ->
@@ -80,7 +80,7 @@ class exports.Client
     else if (authentication is AuthenticationWrap || authentication.type == "Wrap")
       @client.headers.Authorization = "WRAP access_token=\"#{authentication.accessToken}\""
     else
-      throw "unknown authentication type"
+      throw new Error "unknown authentication type"
     @_authType = authentication.type
     @apiVersion = options?.apiVersion || apiVersion
 
@@ -129,8 +129,8 @@ class exports.Client
 
   setAccessToken : (acessToken) ->
     if (@_authType != "OAuth" and @_authType != "Wrap")
-      throw "can only set access token for OAuth or Wrap client"
-      
+      throw new Error "can only set access token for OAuth or Wrap client"
+
     if @_authType is "OAuth"
       @client.headers.Authorization = "bearer #{acessToken}"
     else
@@ -260,7 +260,7 @@ class exports.Client
 
     path = @buildApiPath 'projects/' + projectId, 'includeCapabilities=' + includeCapabilities
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getProjectCollections: (pageSize, skip, callback) ->
     if typeof pageSize is 'function'
@@ -275,13 +275,13 @@ class exports.Client
 
     path = @buildApiPath 'projectcollections', '$top=' + pageSize + "&$skip=" + skip
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getProjectCollection: (collectionId, callback) ->
 
     path = @buildApiPath 'projectcollections/' + collectionId
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getTeams: (projectId, pageSize, skip, callback) ->
     if typeof pageSize is 'function'
@@ -296,12 +296,12 @@ class exports.Client
 
     path = @buildApiPath 'projects/' + projectId + '/teams', '$top=' + pageSize + '&$skip=' + skip
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getTeam: (projectId, teamId, callback) ->
     path = @buildApiPath 'projects/' + projectId + '/teams/' + teamId
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getTeamMembers: (projectId, teamId, pageSize, skip, callback) ->
     if typeof pageSize is 'function'
@@ -315,7 +315,7 @@ class exports.Client
     skip = skip ? 0
     path = @buildApiPath 'projects/' + projectId + '/teams/' + teamId + '/members', '$top=' + pageSize + '&$skip=' + skip
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   #########################################
   # Tags
@@ -328,20 +328,20 @@ class exports.Client
 
     path = @buildApiPath 'tagging/scopes/' + scope + '/tags', 'includeinactive=' + includeInactive
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getTag: (scope, tag, callback) ->
     tagId = encodeURI tag
     path = @buildApiPath 'tagging/scopes/' + scope + '/tags/' + tagId
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   createTag: (scope, name, callback) ->
     tag =
       name: name
     path = @buildApiPath 'tagging/scopes/' + scope + '/tags'
     @client.post path, tag, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   updateTag: (scope, tagId, name, active, callback) ->
     tag =
@@ -349,13 +349,13 @@ class exports.Client
       active: active
     path = @buildApiPath 'tagging/scopes/' + scope + '/tags/' + tagId
     @client.patch path, tag, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   deleteTag: (scope, tag, callback) ->
     tagId = encodeURI tag
     path = @buildApiPath 'tagging/scopes/' + scope + '/tags/' + tagId
     @client.del path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   #########################################
   # Work Items
@@ -378,7 +378,7 @@ class exports.Client
 
     path = @buildApiPath 'wit/queryresults', params
     @client.post path, query, (err, res, body) =>
-      @parseReplyData err, res,  body, (err, results) ->
+      @parseReplyData err, res, body, (err, results) ->
         if err
           callback err, results
         else
@@ -403,7 +403,7 @@ class exports.Client
     path = @buildApiPath 'wit/queryresults', params
 
     @client.post path, query, (err, res, body) =>
-      @parseReplyData err, res,  body, (err, results) ->
+      @parseReplyData err, res, body, (err, results) ->
         if err
           callback err, results
         else
@@ -440,7 +440,7 @@ class exports.Client
     path = @buildApiPath 'wit/workitems', params
 
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getWorkItem: (id, expand, callback) ->
     if typeof expand is 'function'
@@ -453,7 +453,7 @@ class exports.Client
 
     path = @buildApiPath 'wit/workitems/' + id, params
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   createWorkItem: (item, projectName, workItemType, callback) ->
     if @apiVersion == "1.0-preview.1"
@@ -477,7 +477,7 @@ class exports.Client
         else if res.statusCode == 404
           callback body?.message || "Error Creating work item", body
         else
-          @parseReplyData err, res,  body, callback
+          @parseReplyData err, res, body, callback
 
   updateWorkItem: (id, operations, callback) ->
     path = @buildApiPath 'wit/workitems/' + id
@@ -487,7 +487,7 @@ class exports.Client
       if res?.statusCode == 404
         callback body?.message || "Error Creating work item", body
       else
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   updateWorkItems: (items, callback) ->
     path = @buildApiPath 'wit/workitems'
@@ -498,7 +498,7 @@ class exports.Client
       if res?.statusCode == 404
         callback body?.message || "Error Creating work item", body
       else
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getWorkItemUpdates: (id, pageSize, skip, callback) ->
     if typeof pageSize is 'function'
@@ -513,17 +513,17 @@ class exports.Client
 
     path = @buildApiPath 'wit/workitems/' + id + '/updates', '$top=' + pageSize + '&$skip=' + skip
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getWorkItemUpdate: (id, rev, callback) ->
     path = @buildApiPath 'wit/workitems/' + id + '/updates/' + rev
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getWorkItemRevision: (id, rev, callback) ->
     path = @buildApiPath 'wit/workitems/' + id + '/revisions/' + rev
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   uploadAttachment: (project, areaPath, fileName, file, callback) ->
     #For binary file, use base64 encoded string
@@ -532,7 +532,7 @@ class exports.Client
     params += '&filename=' + encodeURI fileName
     path = @buildApiPath 'wit/attachments', params
     @client.post path, file, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   addAttachmentToWorkItem: (id, rev, fileName, locationId, comment, callback) ->
     item =
@@ -548,7 +548,7 @@ class exports.Client
       ]
     path = @buildApiPath 'wit/workitems/' + id
     @client.patch path, item, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   #########################################
   # Work Item Queries
@@ -591,7 +591,7 @@ class exports.Client
      path = @buildApiPath 'wit/queries' + folderPathParam, params, { projectName : projectName }
 
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getQuery: (projectName, queryOrFolderId, folderPath, callback) ->
     if typeof folderPath is 'function'
@@ -605,7 +605,7 @@ class exports.Client
       path = @buildApiPath 'wit/queries' + folderPathParam + '/' + queryOrFolderId, null, { projectName : projectName }
 
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   createQuery: (projectName, name, folderIdOrPath, wiql, callback) ->
     if @apiVersion == '1.0-preview.1'
@@ -621,7 +621,7 @@ class exports.Client
         wiql: wiql
 
     @client.post path, query, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   updateQuery: (projectName, queryId, name, folderIdOrPath, wiql, callback) ->
     if @apiVersion == '1.0-preview.1'
@@ -639,7 +639,7 @@ class exports.Client
       wiql: wiql
 
     @client.patch path, query, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   createFolder: (projectName, name, parentFolderIdOrPath, callback) ->
     if @apiVersion == '1.0-preview.1'
@@ -655,7 +655,7 @@ class exports.Client
         isFolder: "true"
 
     @client.post path, folder, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   deleteQuery: (projectName, queryIdOrPath, callback) ->
     if @apiVersion == '1.0-preview.1'
@@ -664,7 +664,7 @@ class exports.Client
       path = @buildApiPath 'wit/queries' + (@encodeFolderPath queryIdOrPath) , null, { projectName : projectName }
 
     @client.del path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   deleteFolder: (projectName, queryIdOrPath, callback) ->
     @deleteQuery projectName, queryIdOrPath, callback
@@ -734,16 +734,23 @@ class exports.Client
   # Accounts and Profiles
   #########################################
 
+  getAccounts: (memberId, callback) ->
+    @checkAndRequireOAuth 'getAccounts'
+    path = @buildApiPath 'accounts', 'memberid=' + memberId, { excludeCollection : true }
+    @clientSPS.get path, (err, res, body) =>
+      @parseReplyData err, res, body, callback
+
+
   getCurrentProfile: (callback) ->
     @checkAndRequireOAuth "getCurrentProfile"
     path = @buildApiPath 'profile/profiles/me', null, {excludeCollection : true }
     @clientSPS.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getConnectionData: (callback) ->
     path = @buildApiPath 'connectionData'
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
 
   #########################################
@@ -753,12 +760,12 @@ class exports.Client
   getRooms: (callback) ->
     path = @buildApiPath 'chat/rooms'
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getRoom: (roomId, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   createRoom: (name, description, callback) ->
     path = @buildApiPath 'chat/rooms'
@@ -766,7 +773,7 @@ class exports.Client
       name: name
       description: description
     @client.post path, room, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   updateRoom: (roomId, name, description, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId
@@ -774,22 +781,22 @@ class exports.Client
       name: name
       description: description
     @client.patch path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   deleteRoom: (roomId, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId
     @client.del path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getRoomUsers: (roomId, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId + '/users'
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getRoomUser: (roomId, userId, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId + '/users/' + userId
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   joinRoom: (roomId, userId, userGuid, callback) ->
     # console.log userId
@@ -800,7 +807,7 @@ class exports.Client
   leaveRoom: (roomId, userId, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId + '/users/' + userId
     @client.del path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getMessages: (roomId, startDate, endDate, callback) ->
     params = null
@@ -820,28 +827,28 @@ class exports.Client
 
     path = @buildApiPath 'chat/rooms/' + roomId + '/messages', params
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getMessage: (roomId, messageId, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId + '/messages/' + messageId
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   createMessage: (roomId, message, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId + '/messages'
     @client.post path, message, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   updateMessage: (roomId, messageId, message, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId + '/messages/' + messageId
     @client.patch path, (err, res, body) =>
       # console.log res
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   deleteMessage: (roomId, messageId, callback) ->
     path = @buildApiPath 'chat/rooms/' + roomId + '/messages/' + messageId
     @client.del path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   #########################################
   # Version Control
@@ -864,7 +871,7 @@ class exports.Client
     path = @buildApiPath 'tfvc/branches', p
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getBranch: (path, includeChildren, includeParent, includeDeleted, callback) ->
     if typeof includeChildren is 'function'
@@ -888,7 +895,7 @@ class exports.Client
     path = @buildApiPath 'tfvc/branches/' + path, p
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getShelveSets: (owner, maxCommentLength, pageSize, skip, callback) ->
     if typeof owner is 'function'
@@ -916,7 +923,7 @@ class exports.Client
     p = params.join '&'
     path = @buildApiPath 'tfvc/shelvesets', p
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getChangeSets: (queryOptions, callback) ->
     if typeof queryOptions is 'function'
@@ -955,7 +962,7 @@ class exports.Client
     p = params.join '&'
     path = @buildApiPath 'tfvc/changesets', p
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getChangeSet: (changesetId, queryOptions, callback) ->
     if typeof queryOptions is 'function'
@@ -978,7 +985,7 @@ class exports.Client
     path = @buildApiPath 'tfvc/changesets/' + changesetId, p
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getChangeSetChanges: (queryOptions, callback) ->
     if typeof queryOptions is 'function'
@@ -997,7 +1004,7 @@ class exports.Client
     path = @buildApiPath url, p
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getChangeSetWorkItems: (queryOptions, callback) ->
     if typeof queryOptions is 'function'
@@ -1016,7 +1023,7 @@ class exports.Client
     path = @buildApiPath url, p
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getLabels: (queryOptions, callback) ->
     if typeof queryOptions is 'function'
@@ -1040,7 +1047,7 @@ class exports.Client
     path = @buildApiPath 'tfvc/labels', p
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getLabel: (labelId, maxItemCount, callback) ->
     if typeof maxItemCount is 'function'
@@ -1050,7 +1057,7 @@ class exports.Client
     path = @buildApiPath 'tfvc/labels/' + labelId, params
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getItemsByLabel: (labelId, pageSize, skip, callback) ->
     if typeof pageSize is 'function'
@@ -1067,7 +1074,7 @@ class exports.Client
     path = @buildApiPath 'tfvc/labels/' + labelId + '/items', params
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   #########################################
   # Git Repositories
@@ -1083,7 +1090,7 @@ class exports.Client
     else
       path = @buildApiPath 'git/repositories'
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getRepository: (repositoryIdOrName, projectId, callback) ->
     path = ''
@@ -1096,7 +1103,7 @@ class exports.Client
     else
       path = @buildApiPath 'git/repositories/' + repo
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   createRepository: (projectId, name, callback) ->
     repo =
@@ -1105,7 +1112,7 @@ class exports.Client
         id: projectId
     path = @buildApiPath 'git/repositories'
     @client.post path, repo, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   renameRepository: (repositoryId, name, callback) ->
     repo =
@@ -1113,12 +1120,12 @@ class exports.Client
       name: name
     path = @buildApiPath 'git/repositories/' + repositoryId
     @client.patch path, repo, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   deleteRepository: (repositoryId, callback) ->
     path = @buildApiPath 'git/repositories/' + repositoryId
     @client.del path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getCommits: (repositoryId, itemPath, committer, author, fromDate, toDate, pageSize, skip, callback) ->
     if typeof itemPath is 'function'
@@ -1161,7 +1168,7 @@ class exports.Client
     path = @buildApiPath 'git/repositories/' + repositoryId + '/commits', params
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getCommit: (repositoryId, commitId, changeCount, callback) ->
     if typeof changeCount is 'function'
@@ -1171,7 +1178,7 @@ class exports.Client
     path = @buildApiPath 'git/repositories/' + repositoryId + '/commits/' + commitId, 'changeCount=' + changeCount
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getDiffs: (repositoryId, baseVersionType, baseVersion, targetVersionType, targetVersion, pageSize, skip, callback) ->
     if typeof baseVersionType is 'function'
@@ -1209,7 +1216,7 @@ class exports.Client
     path = @buildApiPath 'git/repositories/' + repositoryId + '/diffs/commits', params
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getPushes: (repositoryId, fromDate, toDate, pusherId, pageSize, skip, callback) ->
     if typeof fromDate is 'function'
@@ -1242,7 +1249,7 @@ class exports.Client
     path = @buildApiPath 'git/repositories/' + repositoryId + '/pushes', params
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getStats: (repositoryId, branchName, baseVersionType, baseVersion, callback) ->
     if typeof branchName is 'function'
@@ -1268,7 +1275,7 @@ class exports.Client
     path = @buildApiPath url, params.join '&'
     # console.log path
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getRefs: (repositoryId, filter, callback) ->
     if typeof filter is 'function'
@@ -1281,7 +1288,7 @@ class exports.Client
 
     path = @buildApiPath url
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   #########################################
   # Builds
@@ -1290,12 +1297,12 @@ class exports.Client
   getBuildDefinitions: (callback) ->
     path= @buildApiPath 'build/definitions'
     @client.get path, (err,res,body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   queueBuild: (buildRequest, callback) ->
     path = @buildApiPath 'build/requests'
     @client.post path, buildRequest, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
 
   #########################################
@@ -1305,39 +1312,39 @@ class exports.Client
   getPublishers: (callback) ->
     path = @buildApiPath 'hooks/publishers'
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getConsumers: (callback) ->
     path = @buildApiPath 'hooks/consumers'
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getConsumer: (consumerId, callback) ->
     path = @buildApiPath 'hooks/consumers/' + consumerId
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getConsumerActions: (consumerId, callback) ->
     path = @buildApiPath 'hooks/consumers/' + consumerId + '/actions'
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getConsumerAction: (consumerId, action, callback) ->
     path = @buildApiPath 'hooks/consumers/' + consumerId + '/actions/' + action
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   getSubscriptions: (callback) ->
     path = @buildApiPath 'hooks/subscriptions'
     @client.get path, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   createSubscription: (subscription, callback) ->
     path = @buildApiPath 'hooks/subscriptions'
     @client.post path, subscription, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback
 
   querySubscriptions: (queryOptions, callback) ->
     path = @buildApiPath 'hooks/subscriptionsquery'
     @client.post path, queryOptions, (err, res, body) =>
-      @parseReplyData err, res,  body, callback
+      @parseReplyData err, res, body, callback

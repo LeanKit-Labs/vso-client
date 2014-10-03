@@ -12,7 +12,9 @@ var mocha = require('mocha'),
     username = process.env.VSO_USER || 'your-username',
     password = process.env.VSO_PWD || 'your-password',
     serviceAccountUser = process.env.VSO_SERVICE_ACCOUNT_USER || 'your service account username',
-    serviceAccountPassword = process.env.VSO_SERVICE_ACCOUNT_PWD || 'your service account password';
+    serviceAccountPassword = process.env.VSO_SERVICE_ACCOUNT_PWD || 'your service account password',
+    oauthToken = process.env.VSO_OAUTH_TOKEN || 'dummyAccessToken',
+    memberId = process.env.VSO_MEMBER_ID || '00000000-0000-0000-0000-000000000000';
 proxy = process.env.VSO_PROXY;
 testProjectName = process.env.VSO_TEST_PROJECT || 'TFS INTEGRATION';
 
@@ -128,7 +130,8 @@ describe('VSO Client Tests Preview.1', function () {
 
     before(function (done) {
         client = Client.createClient(url, collection, username, password, getOptions());
-        clientOAuth = Client.createOAuthClient(url, collection, "dummyAccessToken", getOptions());
+        clientOAuth = Client.createOAuthClient(url, collection, oauthToken, getOptions());
+        // console.log(oauthToken);
         done();
     });
 
@@ -833,6 +836,25 @@ describe('VSO Client Tests Preview.1', function () {
     // Accounts and Profiles Tests are not testable since they required
     // OAuth, thus requiring human intervention to get a token with
     // an authorization
+
+    describe.skip('Accounts', function() {
+      it('should return a list of accounts', function(done){
+        clientOAuth.getAccounts(memberId, function (err, accounts) {
+          // console.log(err);
+          should.not.exist(err);
+          should.exist(accounts);
+          // console.log(accounts);
+          accounts.should.be.instanceOf(Array);
+          accounts.length.should.be.above(0);
+          var account = accounts[0];
+          account.should.have.property('accountId');
+          account.should.have.property('accountUri');
+          account.should.have.property('accountName');
+          account.should.have.property('organizationName');
+          done();
+        });
+      });
+    });
 
     describe.skip('Team Room tests', function () {
         it('should return a list of team rooms', function (done) {

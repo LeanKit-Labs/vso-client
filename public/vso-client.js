@@ -136,7 +136,7 @@ exports.Client = (function() {
     } else if (authentication === AuthenticationWrap || authentication.type === "Wrap") {
       this.client.headers.Authorization = "WRAP access_token=\"" + authentication.accessToken + "\"";
     } else {
-      throw "unknown authentication type";
+      throw new Error("unknown authentication type");
     }
     this._authType = authentication.type;
     this.apiVersion = (options != null ? options.apiVersion : void 0) || apiVersion;
@@ -194,7 +194,7 @@ exports.Client = (function() {
 
   Client.prototype.setAccessToken = function(acessToken) {
     if (this._authType !== "OAuth" && this._authType !== "Wrap") {
-      throw "can only set access token for OAuth or Wrap client";
+      throw new Error("can only set access token for OAuth or Wrap client");
     }
     if (this._authType === "OAuth") {
       return this.client.headers.Authorization = "bearer " + acessToken;
@@ -1012,6 +1012,19 @@ exports.Client = (function() {
     this.checkAndRequireMinimumVersion("1.0-preview.2");
     path = this.buildApiPath('wit/fields/' + referenceName);
     return this.client.get(path, (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getAccounts = function(memberId, callback) {
+    var path;
+    this.checkAndRequireOAuth('getAccounts');
+    path = this.buildApiPath('accounts', 'memberid=' + memberId, {
+      excludeCollection: true
+    });
+    return this.clientSPS.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
       };
