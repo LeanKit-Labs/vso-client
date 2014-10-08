@@ -20,7 +20,7 @@ requestToken = (clientAssertion, assertion, grantType, redirectUri, callback, to
       "assertion" : assertion,
       "redirect_uri" : redirectUri
       }
-    }, (err,res,body) ->
+    } , (err, res, body) ->
     if (err)
       callback err, body
     else if (res.statusCode != 200 and res.statusCode != 400 and res.statusCode != 401)
@@ -35,8 +35,8 @@ requestWrapToken = (accountUrl, username, password, callback) ->
     followRedirect: false
     (err, res, body) ->
       return callback err, body, res if err
-      realm = res.headers['x-tfs-fedauthrealm'];
-      issuer = res.headers['x-tfs-fedauthissuer'];
+      realm = res.headers['x-tfs-fedauthrealm']
+      issuer = res.headers['x-tfs-fedauthissuer']
 
       return callback "Can't determine Federation data on headers", body, res unless realm and issuer
 
@@ -45,9 +45,9 @@ requestWrapToken = (accountUrl, username, password, callback) ->
         callback err, (if err then res.body else token), res
 
 
-exports.createClient = (url, collection, username, password, options) -> new exports.Client url, collection, (new AuthenticationCredential  username, password), options
-exports.createOAuthClient = (url, collection, accessToken, options) -> new exports.Client url, collection, (new  AuthenticationOAuth accessToken), options
-exports.createWrapClient = (url, collection, accessToken, options) -> new exports.Client url, collection, (new  AuthenticationWrap accessToken), options
+exports.createClient = (url, collection, username, password, options) -> new exports.Client url, collection, (new AuthenticationCredential username, password), options
+exports.createOAuthClient = (url, collection, accessToken, options) -> new exports.Client url, collection, (new AuthenticationOAuth accessToken), options
+exports.createWrapClient = (url, collection, accessToken, options) -> new exports.Client url, collection, (new AuthenticationWrap accessToken), options
 
 exports.getToken = (clientAssertion, assertion, redirectUri, callback, tokenUri = vsoTokenUri) -> requestToken(clientAssertion, assertion, "urn:ietf:params:oauth:grant-type:jwt-bearer", redirectUri, callback, tokenUri)
 exports.refreshToken = (clientAssertion, assertion, redirectUri, callback, tokenUri = vsoTokenUri) -> requestToken(clientAssertion, assertion, "refresh_token", redirectUri, callback, tokenUri)
@@ -149,7 +149,7 @@ class exports.Client
       if options?.projectName
         basePath = '/'+ @collection + '/' + (encodeURI options.projectName)
       else
-        basePath = '/'+ @collection
+        basePath = '/' + @collection
 
     returnPath = basePath + '/_apis/' + path + '?api-version=' + @apiVersion
 
@@ -177,7 +177,7 @@ class exports.Client
     dashPosition = version.indexOf("-")
 
     if(dashPosition != -1)
-      return version.substring(0,dashPosition)
+      return version.substring(0, dashPosition)
 
     return version
 
@@ -190,7 +190,7 @@ class exports.Client
   getVersionStage = (version) ->
     dashPosition = version.indexOf("-")
 
-    if(dashPosition == -1)
+    if(dashPosition == - 1)
       return ""
 
     return version.substring dashPosition
@@ -219,7 +219,7 @@ class exports.Client
 
   checkAndRequireMinimumVersion: (minimumVersion) ->
     unless @requireMinimumVersion @apiVersion , minimumVersion
-      throw "this method requires at least @{minimumVersion)"
+      throw new Error "this method requires at least @{minimumVersion)"
 
   #########################################
   # Projects and Teams
@@ -585,10 +585,10 @@ class exports.Client
     if @apiVersion == '1.0-preview.1'
       path = @buildApiPath 'wit/queries', params
     else
-     if includeDeleted
-      params = '&$includeDeleted=' + includeDeleted
+      if includeDeleted
+        params = '&$includeDeleted=' + includeDeleted
 
-     path = @buildApiPath 'wit/queries' + folderPathParam, params, { projectName : projectName }
+    path = @buildApiPath 'wit/queries' + folderPathParam, params, { projectName : projectName }
 
     @client.get path, (err, res, body) =>
       @parseReplyData err, res, body, callback
@@ -659,7 +659,7 @@ class exports.Client
 
   deleteQuery: (projectName, queryIdOrPath, callback) ->
     if @apiVersion == '1.0-preview.1'
-       path = @buildApiPath 'wit/queries/' + queryIdOrPath
+      path = @buildApiPath 'wit/queries/' + queryIdOrPath
     else
       path = @buildApiPath 'wit/queries' + (@encodeFolderPath queryIdOrPath) , null, { projectName : projectName }
 
@@ -722,7 +722,7 @@ class exports.Client
     @client.get path, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
-  getWorkItemField: (referenceName,  callback) ->
+  getWorkItemField: (referenceName, callback) ->
     @checkAndRequireMinimumVersion "1.0-preview.2"
 
     path = @buildApiPath 'wit/fields/' + referenceName
@@ -801,7 +801,7 @@ class exports.Client
   joinRoom: (roomId, userId, userGuid, callback) ->
     # console.log userId
     path = @buildApiPath 'chat/rooms/' + roomId + '/users/' + userGuid
-    @client.put path, userId, (err, res, body) =>
+    @client.put path, userId, (err, res, body) ->
       callback err, res.statusCode
 
   leaveRoom: (roomId, userId, callback) ->
@@ -1295,8 +1295,8 @@ class exports.Client
   #########################################
 
   getBuildDefinitions: (callback) ->
-    path= @buildApiPath 'build/definitions'
-    @client.get path, (err,res,body) =>
+    path = @buildApiPath 'build/definitions'
+    @client.get path, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
   queueBuild: (buildRequest, callback) ->

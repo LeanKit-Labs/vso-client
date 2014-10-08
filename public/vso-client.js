@@ -302,7 +302,7 @@ exports.Client = (function() {
 
   Client.prototype.checkAndRequireMinimumVersion = function(minimumVersion) {
     if (!this.requireMinimumVersion(this.apiVersion, minimumVersion)) {
-      throw "this method requires at least @{minimumVersion)";
+      throw new Error("this method requires at least @{minimumVersion)");
     }
   };
 
@@ -791,10 +791,10 @@ exports.Client = (function() {
       if (includeDeleted) {
         params = '&$includeDeleted=' + includeDeleted;
       }
-      path = this.buildApiPath('wit/queries' + folderPathParam, params, {
-        projectName: projectName
-      });
     }
+    path = this.buildApiPath('wit/queries' + folderPathParam, params, {
+      projectName: projectName
+    });
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
@@ -1135,11 +1135,9 @@ exports.Client = (function() {
   Client.prototype.joinRoom = function(roomId, userId, userGuid, callback) {
     var path;
     path = this.buildApiPath('chat/rooms/' + roomId + '/users/' + userGuid);
-    return this.client.put(path, userId, (function(_this) {
-      return function(err, res, body) {
-        return callback(err, res.statusCode);
-      };
-    })(this));
+    return this.client.put(path, userId, function(err, res, body) {
+      return callback(err, res.statusCode);
+    });
   };
 
   Client.prototype.leaveRoom = function(roomId, userId, callback) {
