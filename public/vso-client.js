@@ -209,7 +209,7 @@ exports.Client = (function() {
 
   Client.prototype.checkAndRequireOAuth = function(methodName) {
     if (this._authType !== "OAuth") {
-      throw methodName + " can only be invoked with OAuth";
+      throw new Error(methodName + " can only be invoked with OAuth");
     }
   };
 
@@ -489,20 +489,34 @@ exports.Client = (function() {
   };
 
   Client.prototype.getWorkItemIds = function(wiql, projectName, callback) {
-    var params, path, query;
+    var options, params, path, query;
     if (typeof projectName === 'function') {
       callback = projectName;
       projectName = null;
     }
-    query = {
-      wiql: wiql
-    };
     params = null;
-    if (projectName) {
-      projectName = encodeURI(projectName);
-      params = '@project=' + projectName;
+    options = null;
+    if (this.apiVersion === "1.0-preview.1") {
+      query = {
+        wiql: wiql
+      };
+      if (projectName) {
+        projectName = encodeURI(projectName);
+        params = '@project=' + projectName;
+      }
+      path = this.buildApiPath('wit/queryresults', params);
+    } else {
+      query = {
+        query: wiql
+      };
+      if (projectName) {
+        path = this.buildApiPath('wit/wiql', params, {
+          projectName: projectName
+        });
+      } else {
+        path = this.buildApiPath('wit/wiql', params);
+      }
     }
-    path = this.buildApiPath('wit/queryresults', params);
     return this.client.post(path, query, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, function(err, results) {
@@ -510,7 +524,11 @@ exports.Client = (function() {
           if (err) {
             return callback(err, results);
           } else {
-            ids = _.map(results.results, 'sourceId');
+            if (results && results.results) {
+              ids = _.map(results.results, 'sourceId');
+            } else {
+              ids = _.map(results.workItems, 'id');
+            }
             return callback(err, ids);
           }
         });

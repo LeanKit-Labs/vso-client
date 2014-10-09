@@ -141,7 +141,7 @@ class exports.Client
 
   checkAndRequireOAuth : (methodName) ->
     if (@_authType != "OAuth")
-      throw methodName + " can only be invoked with OAuth"
+      throw new Error methodName + " can only be invoked with OAuth"
 
   buildApiPath : (path, params, options) ->
     basePath = ""
@@ -366,23 +366,38 @@ class exports.Client
       callback = projectName
       projectName = null
 
-    query =
-      wiql: wiql
-
     # console.log query
 
     params = null
-    if projectName
-      projectName = encodeURI projectName
-      params = '@project=' + projectName
+    options = null
 
-    path = @buildApiPath 'wit/queryresults', params
+    if @apiVersion == "1.0-preview.1"
+      query =
+        wiql: wiql
+      if projectName
+        projectName = encodeURI projectName
+        params = '@project=' + projectName
+      path = @buildApiPath 'wit/queryresults', params
+    else
+      query =
+        query: wiql
+      if projectName
+        path = @buildApiPath 'wit/wiql', params, { projectName : projectName }
+      else
+        path = @buildApiPath 'wit/wiql', params
+
+    # console.log path, query
+
     @client.post path, query, (err, res, body) =>
       @parseReplyData err, res, body, (err, results) ->
+        # console.log "Results", results
         if err
           callback err, results
         else
-          ids = _.map results.results, 'sourceId'
+          if results && results.results
+            ids = _.map results.results, 'sourceId'
+          else
+            ids = _.map results.workItems, 'id'
           callback err, ids
 
   getWorkItemIdsByQuery: (queryId, projectName, callback) ->
