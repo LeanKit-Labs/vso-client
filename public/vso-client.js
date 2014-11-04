@@ -8,7 +8,7 @@ request = require("request");
 
 azure = require('azure');
 
-apiVersion = '1.0-preview.1';
+apiVersion = '1.0';
 
 spsUri = 'https://app.vssps.visualstudio.com';
 
@@ -888,6 +888,7 @@ exports.Client = (function() {
         wiql: wiql
       });
     }
+    console.log(path);
     return this.client.patch(path, query, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);

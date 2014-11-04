@@ -3,7 +3,7 @@ requestJson = require 'request-json'
 request = require "request"
 azure = require 'azure'
 
-apiVersion = '1.0-preview.1'
+apiVersion = '1.0'
 
 spsUri = 'https://app.vssps.visualstudio.com'
 vsoTokenUri = spsUri + '/oauth2/token'
@@ -652,6 +652,8 @@ class exports.Client
       query =
         name: name
       wiql: wiql
+
+    console.log path
 
     @client.patch path, query, (err, res, body) =>
       @parseReplyData err, res, body, callback
