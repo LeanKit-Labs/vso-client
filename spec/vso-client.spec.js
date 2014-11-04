@@ -23,6 +23,7 @@ function getOptions( overrideVersion ) {
 		apiVersion: overrideVersion || "1.0"
 	};
 	if ( typeof (proxy) !== "undefined" || proxy !== null ) {
+		process.env[ 'NODE_TLS_REJECT_UNAUTHORIZED' ] = '0';
 		options.clientOptions = {
 			proxy: proxy
 		};
@@ -483,6 +484,8 @@ describe( 'VSO API 1.0 Tests', function() {
 
 		before( function( done ) {
 			client.getProjects( function( err, projects ) {
+				// console.log(err);
+				// console.log(projects);
 				testProject = _.find( projects, function( p ) {
 					return p.name === testProjectName;
 				} );
@@ -596,7 +599,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should update a query', function( done ) {
+		it( 'should update a query by name', function( done ) {
 			should.exist( testProject );
 			should.exist( testFolder );
 			should.exist( testQuery );
@@ -605,9 +608,32 @@ describe( 'VSO API 1.0 Tests', function() {
 
 			client.getQuery( testProject.name, testQuery.id, function( err, query ) {
 				should.exist( query );
-				console.log(testFolder);
-				console.log(query);
-				client.updateQuery( testProject.name, query.name, 'testQuery1-updated', testFolder.id, wiql, function( err, query2 ) {
+				// console.log(testFolder);
+				// console.log(query);
+				client.updateQuery( testProject.name, query.name, 'testQuery1-updated', testFolder.path, wiql, function( err, query2 ) {
+					should.not.exist( err );
+					should.exist( query2 );
+					// console.log(query);
+					query2.should.have.property( 'id' );
+					query2.should.have.property( 'url' );
+					testQuery = query2;
+					done();
+				} );
+			} );
+		} );
+
+		it( 'should update a query by id', function( done ) {
+			should.exist( testProject );
+			should.exist( testFolder );
+			should.exist( testQuery );
+
+			var wiql = 'Select [System.Id], [System.Title], [System.State] From WorkItems Where [System.WorkItemType] = \'Bug\' order by [Microsoft.VSTS.Common.Priority] asc, [System.CreatedDate] asc';
+
+			client.getQuery( testProject.name, testQuery.id, function( err, query ) {
+				should.exist( query );
+				// console.log(testFolder);
+				// console.log(query);
+				client.updateQuery( testProject.name, query.id, 'testQuery1-updated2', null, wiql, function( err, query2 ) {
 					should.not.exist( err );
 					should.exist( query2 );
 					// console.log(query);

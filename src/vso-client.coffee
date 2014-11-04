@@ -169,6 +169,13 @@ class exports.Client
 
     "/" + (folderParam.split("/").map (e) -> encodeURI e).join("/")
 
+  isGuid : (id) ->
+    guidPattern = /// ^
+      [0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+      $ ///i
+
+    id.match guidPattern
+
   #########################################
   # Version validation
   #########################################
@@ -638,22 +645,21 @@ class exports.Client
     @client.post path, query, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
-  updateQuery: (projectName, queryId, name, folderIdOrPath, wiql, callback) ->
+  updateQuery: (projectName, queryIdOrName, name, folderIdOrPath, wiql, callback) ->
     if @apiVersion == '1.0-preview.1'
       path = @buildApiPath 'wit/queries/' + queryId
       query =
-        id: queryId
+        id: queryIdOrName
         name: name
         parentId: folderIdOrPath
         wiql: wiql
       path = @buildApiPath 'wit/queries'
     else
-      path = @buildApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) + '/' + queryId , null, { projectName : projectName }
+      path = if @isGuid queryIdOrName then @buildApiPath 'wit/queries/' + queryIdOrName , null, { projectName : projectName } else @buildApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) + '/' + queryIdOrName , null, { projectName : projectName }
+      # path = @buildApiPath 'wit/queries' + (@encodeFolderPath folderIdOrPath) + '/' + queryIdOrName , null, { projectName : projectName }
       query =
         name: name
       wiql: wiql
-
-    console.log path
 
     @client.patch path, query, (err, res, body) =>
       @parseReplyData err, res, body, callback

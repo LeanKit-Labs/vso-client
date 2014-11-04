@@ -249,6 +249,12 @@ exports.Client = (function() {
     })).join("/");
   };
 
+  Client.prototype.isGuid = function(id) {
+    var guidPattern;
+    guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return id.match(guidPattern);
+  };
+
   getVersion = function(version) {
     var dashPosition;
     dashPosition = version.indexOf("-");
@@ -866,19 +872,21 @@ exports.Client = (function() {
     })(this));
   };
 
-  Client.prototype.updateQuery = function(projectName, queryId, name, folderIdOrPath, wiql, callback) {
+  Client.prototype.updateQuery = function(projectName, queryIdOrName, name, folderIdOrPath, wiql, callback) {
     var path, query;
     if (this.apiVersion === '1.0-preview.1') {
       path = this.buildApiPath('wit/queries/' + queryId);
       query = {
-        id: queryId,
+        id: queryIdOrName,
         name: name,
         parentId: folderIdOrPath,
         wiql: wiql
       };
       path = this.buildApiPath('wit/queries');
     } else {
-      path = this.buildApiPath('wit/queries' + (this.encodeFolderPath(folderIdOrPath)) + '/' + queryId, null, {
+      path = this.isGuid(queryIdOrName) ? this.buildApiPath('wit/queries/' + queryIdOrName, null, {
+        projectName: projectName
+      }) : this.buildApiPath('wit/queries' + (this.encodeFolderPath(folderIdOrPath)) + '/' + queryIdOrName, null, {
         projectName: projectName
       });
       query = {
@@ -888,7 +896,6 @@ exports.Client = (function() {
         wiql: wiql
       });
     }
-    console.log(path);
     return this.client.patch(path, query, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
