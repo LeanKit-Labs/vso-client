@@ -23,7 +23,7 @@ function getOptions( overrideVersion ) {
 		apiVersion: overrideVersion || "1.0"
 	};
 	if ( typeof (proxy) !== "undefined" || proxy !== null ) {
-		process.env[ 'NODE_TLS_REJECT_UNAUTHORIZED' ] = '0';
+		process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 		options.clientOptions = {
 			proxy: proxy
 		};
@@ -876,8 +876,9 @@ describe( 'VSO API 1.0 Tests', function() {
 		} );
 	} );
 
-	describe.only( 'team room tests', function() {
+	describe( 'team room tests', function() {
 		var testTeamRoom = null;
+		var testTeamRoomId = null;
 
 		it( 'returns a list of team rooms', function( done ) {
 			client.getRooms( function( err, rooms ) {
@@ -885,26 +886,27 @@ describe( 'VSO API 1.0 Tests', function() {
 				should.exist( rooms );
 				// console.log( rooms );
 				rooms.length.should.be.above( 0 );
-				testTeamRoom = _.find( rooms, function( t ) {
+				var room = _.find( rooms, function( t ) {
 					return t.hasReadWritePermissions;
 				} );
-				should.exist( testTeamRoom );
+				should.exist( room );
 				// console.log(testTeamRoom);
-				testTeamRoom.should.have.property( 'id' );
-				testTeamRoom.should.have.property( 'name' );
-				testTeamRoom.should.have.property( 'description' );
-				testTeamRoom.should.have.property( 'lastActivity' );
-				testTeamRoom.should.have.property( 'createdBy' );
-				testTeamRoom.should.have.property( 'createdDate' );
-				testTeamRoom.should.have.property( 'hasAdminPermissions' );
-				testTeamRoom.should.have.property( 'hasReadWritePermissions' );
+				room.should.have.property( 'id' );
+				room.should.have.property( 'name' );
+				room.should.have.property( 'description' );
+				room.should.have.property( 'lastActivity' );
+				room.should.have.property( 'createdBy' );
+				room.should.have.property( 'createdDate' );
+				room.should.have.property( 'hasAdminPermissions' );
+				room.should.have.property( 'hasReadWritePermissions' );
+				testTeamRoomId = room.id;
 				done();
 			} );
 		} );
 
 		it( 'returns a room by id', function( done ) {
-			if ( testTeamRoom ) {
-				client.getRoom( testTeamRoom.id, function( err, room ) {
+			if ( testTeamRoomId ) {
+				client.getRoom( testTeamRoomId, function( err, room ) {
 					should.not.exist( err );
 					should.exist( room );
 					// console.log( room );
@@ -924,7 +926,55 @@ describe( 'VSO API 1.0 Tests', function() {
 			}
 		} );
 
-		it( 'creates a room', function( done ) {} );
+		it( 'creates a room', function( done ) {
+			var randomName = 'test-room-' + ( Math.random() + 1 ).toString( 36 ).substring( 7 );
+			client.createRoom( randomName, 'a description', function( err, room ) {
+				should.not.exist( err );
+				should.exist( room );
+				// console.log( room );
+				testTeamRoom = room;
+				room.should.have.property( 'id' );
+				room.should.have.property( 'name' );
+				room.should.have.property( 'description' );
+				room.should.have.property( 'lastActivity' );
+				room.should.have.property( 'createdBy' );
+				room.should.have.property( 'createdDate' );
+				room.should.have.property( 'hasAdminPermissions' );
+				room.should.have.property( 'hasReadWritePermissions' );
+				done();
+			} );
+		} );
+
+		it ( 'updates a room', function( done ) {
+			if ( testTeamRoom ) {
+				var name = testTeamRoom.name + '-updated';
+				var description = 'updated description';
+				client.updateRoom( testTeamRoom.id, name, description, function( err, room ) {
+					should.not.exist( err );
+					should.exist( room );
+					// console.log( room );
+					room.name.should.equal( name );
+					room.description.should.equal( description );
+					done();
+				} );
+			} else {
+				console.log( 'Warning: no test team room' );
+				done();
+			}
+		} );
+
+		it( 'deletes a room', function( done ) {
+			if ( testTeamRoom ) {
+				client.deleteRoom( testTeamRoom.id, function( err, res ) {
+					should.not.exist( err );
+					// console.log( res );
+					done();
+				} );
+			} else {
+				console.log( 'Warning: no test team room' );
+				done();
+			}
+		} );
 	} );
 
 	describe( 'version control tests', function() {

@@ -803,7 +803,7 @@ class exports.Client
     room =
       name: name
       description: description
-    @client.patch path, (err, res, body) =>
+    @client.patch path, room, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
   deleteRoom: (roomId, callback) ->

@@ -1121,7 +1121,7 @@ exports.Client = (function() {
       name: name,
       description: description
     };
-    return this.client.patch(path, (function(_this) {
+    return this.client.patch(path, room, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
       };
