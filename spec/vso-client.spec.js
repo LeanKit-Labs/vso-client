@@ -118,18 +118,18 @@ describe( 'VSO API 1.0 Tests', function() {
 	this.timeout( 20000 );
 	var client = {};
 	var fields = [
-			{ field: { id: -3, name: 'ID', refName: 'System.Id' }, value: 7 },
-			{ field: { id: -2, name: 'Area ID', refName: 'System.AreaId' }, value: 769 },
-			{ field: { id: -7, name: 'Area Path', refName: 'System.AreaPath' }, value: 'TFS Integration' },
-			{ field: { id: -12, name: 'Node Name', refName: 'System.NodeName' }, value: 'TFS Integration' },
-			{ field: { id: -42, name: 'Team Project', refName: 'System.TeamProject' }, value: 'TFS Integration' },
-			{ field: { id: -43, name: 'Area Level 1', refName: 'System.AreaLevel1' }, value: 'TFS Integration' },
-			{ field: { id: 8, name: 'Rev', refName: 'System.Rev' }, value: 20 }
-		];
+		{ field: { id: -3, name: 'ID', refName: 'System.Id' }, value: 7 },
+		{ field: { id: -2, name: 'Area ID', refName: 'System.AreaId' }, value: 769 },
+		{ field: { id: -7, name: 'Area Path', refName: 'System.AreaPath' }, value: 'TFS Integration' },
+		{ field: { id: -12, name: 'Node Name', refName: 'System.NodeName' }, value: 'TFS Integration' },
+		{ field: { id: -42, name: 'Team Project', refName: 'System.TeamProject' }, value: 'TFS Integration' },
+		{ field: { id: -43, name: 'Area Level 1', refName: 'System.AreaLevel1' }, value: 'TFS Integration' },
+		{ field: { id: 8, name: 'Rev', refName: 'System.Rev' }, value: 20 }
+	];
 
 	before( function( done ) {
-		client = Client.createClient( url, collection, username, password, getOptions("1.0") );
-		clientOAuth = Client.createOAuthClient( url, collection, oauthToken, getOptions("1.0") );
+		client = Client.createClient( url, collection, username, password, getOptions( "1.0" ) );
+		clientOAuth = Client.createOAuthClient( url, collection, oauthToken, getOptions( "1.0" ) );
 		// console.log(oauthToken);
 		done();
 	} );
@@ -196,7 +196,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-	});
+	} );
 
 
 	describe( 'project tests', function() {
@@ -224,7 +224,7 @@ describe( 'VSO API 1.0 Tests', function() {
 				var project = _.find( projects, function( p ) {
 					return p.name === testProjectName;
 				} );
-				should.exist(project);
+				should.exist( project );
 				// console.log(project);
 				project.should.have.property( 'id' );
 				project.should.have.property( 'name' );
@@ -474,7 +474,7 @@ describe( 'VSO API 1.0 Tests', function() {
 	// Queries
 	// ---------------------------------------
 
-	describe.only( 'queries', function() {
+	describe( 'queries', function() {
 
 		var myQueries = null;
 		var testQuery = null;
@@ -668,7 +668,7 @@ describe( 'VSO API 1.0 Tests', function() {
 
 	} );
 
-	describe( 'Work Item Tests', function() {
+	describe( 'work items', function() {
 		var testItemIds = null;
 		var testItemIdArray = null;
 		var testItemId = null;
@@ -677,7 +677,7 @@ describe( 'VSO API 1.0 Tests', function() {
 		// Work Item Queries
 		// ---------------------------------------
 
-		it( 'should return a list of work items from wiql query', function( done ) {
+		it( 'returns a list of work items from wiql query', function( done ) {
 			var wiql = 'Select [System.Id], [System.Title], [System.State] From WorkItems Where [System.WorkItemType] = \'Task\' order by [Microsoft.VSTS.Common.Priority] asc, [System.CreatedDate] desc';
 
 			client.getWorkItemIds( wiql, testProjectName, function( err, ids ) {
@@ -697,7 +697,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return a list of work items by comma-separated id list', function( done ) {
+		it( 'returns a list of work items by comma-separated id list', function( done ) {
 			client.getWorkItemsById( testItemIds, null, null, null, function( err, items ) {
 				if ( err ) {
 					console.log( err );
@@ -710,17 +710,15 @@ describe( 'VSO API 1.0 Tests', function() {
 				item.should.have.property( 'id' );
 				item.should.have.property( 'rev' );
 				item.should.have.property( 'url' );
-				item.should.have.property( 'webUrl' );
 				should.exist( item.fields );
-				var systemIdField = _.find( item.fields, function( field ) {
-					return field.field.refName === 'System.Id';
-				} );
-				should.exist( systemIdField );
+				// console.log( item.fields );
+				item.fields.should.have.property( 'System.Title' );
+				item.fields.should.have.property( 'System.State' );
 				done();
 			} );
 		} );
 
-		it( 'should return a list of work items by array of ids', function( done ) {
+		it( 'returns a list of work items by array of ids', function( done ) {
 			client.getWorkItemsById( testItemIdArray, null, null, null, function( err, items ) {
 				if ( err ) {
 					console.log( err );
@@ -733,17 +731,15 @@ describe( 'VSO API 1.0 Tests', function() {
 				item.should.have.property( 'id' );
 				item.should.have.property( 'rev' );
 				item.should.have.property( 'url' );
-				item.should.have.property( 'webUrl' );
 				should.exist( item.fields );
-				var systemIdField = _.find( item.fields, function( field ) {
-					return field.field.refName === 'System.Id';
-				} );
-				should.exist( systemIdField );
+				// console.log( item.fields );
+				item.fields.should.have.property( 'System.Title' );
+				item.fields.should.have.property( 'System.State' );
 				done();
 			} );
 		} );
 
-		it( 'should return a list of work items by ids with expanded links', function( done ) {
+		it( 'returns a list of work items by ids with expanded links', function( done ) {
 			client.getWorkItemsById( testItemIds, null, null, 'all', function( err, items ) {
 				if ( err ) {
 					console.log( err );
@@ -753,30 +749,17 @@ describe( 'VSO API 1.0 Tests', function() {
 				should.exist( items );
 				// console.log(items);
 				items.length.should.be.above( 0 );
-				var item = _.find( items, function( i ) {
-					return i.links;
-				} );
-				if ( item ) {
-					// console.log(item);
-					item.should.have.property( 'id' );
-					item.should.have.property( 'rev' );
-					item.should.have.property( 'url' );
-					item.should.have.property( 'links' );
-					should.exist( item.fields );
-					var systemIdField = _.find( item.fields, function( field ) {
-						return field.field.refName === 'System.Id';
-					} );
-					should.exist( systemIdField );
-					should.exist( item.links );
-					item.links.length.should.be.above( 0 );
-					testItemId = item.id;
-					// console.log(item.links);
-				}
+				var item = items[ 0 ];
+				item.should.have.property( '_links' );
+				should.exist( item._links );
+				item._links.should.have.property( 'self' );
+				testItemId = item.id;
 				done();
 			} );
 		} );
 
-		it( 'should return a work item by id', function( done ) {
+		it( 'returns a work item by id', function( done ) {
+			should.exist( testItemId );
 			client.getWorkItem( testItemId, 'all', function( err, item ) {
 				//client.getWorkItem(7, 'all', function(err, item) {
 				if ( err ) {
@@ -789,17 +772,16 @@ describe( 'VSO API 1.0 Tests', function() {
 				item.should.have.property( 'id' );
 				item.should.have.property( 'rev' );
 				item.should.have.property( 'url' );
-				item.should.have.property( 'webUrl' );
 				should.exist( item.fields );
-				var systemIdField = _.find( item.fields, function( field ) {
-					return field.field.refName === 'System.Id';
-				} );
-				should.exist( systemIdField );
+				// console.log( item.fields );
+				item.fields.should.have.property( 'System.Id' );
+				item.fields.should.have.property( 'System.Title' );
+				item.fields.should.have.property( 'System.State' );
 				done();
 			} );
 		} );
 
-		it( 'should return work item updates', function( done ) {
+		it( 'returns work item updates', function( done ) {
 			client.getWorkItemUpdates( testItemId, function( err, updates ) {
 				if ( err ) {
 					console.log( err );
@@ -818,7 +800,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return a page of work item updates', function( done ) {
+		it( 'returns a page of work item updates', function( done ) {
 			client.getWorkItemUpdates( testItemId, 2, 0, function( err, updates ) {
 				if ( err ) {
 					console.log( err );
@@ -833,7 +815,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return a work item update by revision number', function( done ) {
+		it( 'returns a work item update by revision number', function( done ) {
 			client.getWorkItemUpdate( testItemId, 1, function( err, update ) {
 				if ( err ) {
 					console.log( err );
@@ -850,7 +832,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return a work item by revision number', function( done ) {
+		it( 'returns a work item by revision number', function( done ) {
 			client.getWorkItemRevision( testItemId, 1, function( err, item ) {
 				if ( err ) {
 					console.log( err );
@@ -862,19 +844,15 @@ describe( 'VSO API 1.0 Tests', function() {
 				item.should.have.property( 'id' );
 				item.should.have.property( 'rev' );
 				item.should.have.property( 'url' );
-				item.should.have.property( 'webUrl' );
-				item.should.have.property( 'fields' );
 				should.exist( item.fields );
-				var systemIdField = _.find( item.fields, function( field ) {
-					return field.field.refName === 'System.Id';
-				} );
-				should.exist( systemIdField );
+				// console.log( item.fields );
+				item.fields.should.have.property( 'System.Title' );
+				item.fields.should.have.property( 'System.State' );
 				done();
 			} );
 		} );
 
 	} );
-
 	// Accounts and Profiles Tests are not testable since they required
 	// OAuth, thus requiring human intervention to get a token with
 	// an authorization
@@ -898,40 +876,80 @@ describe( 'VSO API 1.0 Tests', function() {
 		} );
 	} );
 
-	describe.skip( 'Team Room tests', function() {
-		it( 'should return a list of team rooms', function( done ) {
+	describe.only( 'team room tests', function() {
+		var testTeamRoom = null;
+
+		it( 'returns a list of team rooms', function( done ) {
 			client.getRooms( function( err, rooms ) {
 				should.not.exist( err );
 				should.exist( rooms );
-				console.log( rooms );
+				// console.log( rooms );
+				rooms.length.should.be.above( 0 );
+				testTeamRoom = _.find( rooms, function( t ) {
+					return t.hasReadWritePermissions;
+				} );
+				should.exist( testTeamRoom );
+				// console.log(testTeamRoom);
+				testTeamRoom.should.have.property( 'id' );
+				testTeamRoom.should.have.property( 'name' );
+				testTeamRoom.should.have.property( 'description' );
+				testTeamRoom.should.have.property( 'lastActivity' );
+				testTeamRoom.should.have.property( 'createdBy' );
+				testTeamRoom.should.have.property( 'createdDate' );
+				testTeamRoom.should.have.property( 'hasAdminPermissions' );
+				testTeamRoom.should.have.property( 'hasReadWritePermissions' );
 				done();
 			} );
 		} );
+
+		it( 'returns a room by id', function( done ) {
+			if ( testTeamRoom ) {
+				client.getRoom( testTeamRoom.id, function( err, room ) {
+					should.not.exist( err );
+					should.exist( room );
+					// console.log( room );
+					room.should.have.property( 'id' );
+					room.should.have.property( 'name' );
+					room.should.have.property( 'description' );
+					room.should.have.property( 'lastActivity' );
+					room.should.have.property( 'createdBy' );
+					room.should.have.property( 'createdDate' );
+					room.should.have.property( 'hasAdminPermissions' );
+					room.should.have.property( 'hasReadWritePermissions' );
+					done();
+				} );
+			} else {
+				console.log( 'Warning: no test team room' );
+				done();
+			}
+		} );
+
+		it( 'creates a room', function( done ) {} );
 	} );
 
-	describe( 'Version Control tests', function() {
+	describe( 'version control tests', function() {
 
 		before( function() {
-			client.setVersion( '1.0-preview.1' );
+			client.setVersion( '1.0' );
 		} );
 
 		// ---------------------------------------
 		// Version Control
 		// ---------------------------------------
 
-		it( 'should return root branches', function( done ) {
-			client.getRootBranches( function( err, branches ) {
+		it( 'returns root branches', function( done ) {
+			client.getRootBranches( true, true, function( err, branches ) {
 				if ( err ) {
 					console.log( err, branches );
 				}
 				should.not.exist( err );
 				should.exist( branches );
-				// console.log(branches);
+				// console.log( branches );
 				done();
 			} );
 		} );
 
-		it.skip( 'should return a branch', function( done ) {
+		it.skip( 'returns a branch', function( done ) {
 			var path = '$/TestProject';
 			client.getBranch( path, true, true, true, function( err, branch ) {
 				if ( err ) {
@@ -944,7 +962,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return shelvesets', function( done ) {
+		it( 'returns shelvesets', function( done ) {
 			client.getShelveSets( function( err, shelvesets ) {
 				if ( err ) {
 					console.log( err, shelvesets );
@@ -959,7 +977,7 @@ describe( 'VSO API 1.0 Tests', function() {
 		var testCommitId = null;
 		var testChangeSet = null;
 
-		it( 'should return changesets', function( done ) {
+		it( 'returns changesets', function( done ) {
 			client.getChangeSets( function( err, changesets ) {
 				if ( err ) {
 					console.log( err, changesets );
@@ -981,7 +999,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return a changeset by id', function( done ) {
+		it( 'returns a changeset by id', function( done ) {
 			if ( testCommitId ) {
 				client.getChangeSet( testCommitId, function( err, changeset ) {
 					if ( err ) {
@@ -1005,7 +1023,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			}
 		} );
 
-		it( 'should return changsets from range of IDs', function( done ) {
+		it( 'returns changsets from range of IDs', function( done ) {
 			if ( testChangeSet ) {
 				var toId = testChangeSet.changesetId;
 				var fromId = toId - 2;
@@ -1042,7 +1060,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			}
 		} );
 
-		it( 'should return a changeset by id with details', function( done ) {
+		it( 'returns a changeset by id with details', function( done ) {
 			if ( testCommitId ) {
 				var queryOptions = {
 					includeDetails: true,
@@ -1067,7 +1085,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			}
 		} );
 
-		it( 'should return a changeset by id with work items', function( done ) {
+		it( 'returns a changeset by id with work items', function( done ) {
 			if ( testCommitId ) {
 				var queryOptions = {
 					includeDetails: false,
@@ -1091,7 +1109,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			}
 		} );
 
-		it.skip( 'should return latest changeset changes', function( done ) {
+		it.skip( 'returns latest changeset changes', function( done ) {
 			client.getChangeSetChanges( function( err, changes ) {
 				if ( err ) {
 					console.log( err, changes );
@@ -1104,7 +1122,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return changes for a changeset by id', function( done ) {
+		it( 'returns changes for a changeset by id', function( done ) {
 			if ( testCommitId ) {
 				var queryOptions = {
 					id: testCommitId
@@ -1125,7 +1143,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			}
 		} );
 
-		it.skip( 'should return latest changeset work items', function( done ) {
+		it.skip( 'returns latest changeset work items', function( done ) {
 			client.getChangeSetWorkItems( function( err, workitems ) {
 				if ( err ) {
 					console.log( err, workitems );
@@ -1138,7 +1156,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return work items for a changeset by id', function( done ) {
+		it( 'returns work items for a changeset by id', function( done ) {
 			if ( testCommitId ) {
 				var queryOptions = {
 					id: testCommitId
@@ -1159,7 +1177,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			}
 		} );
 
-		it( 'should get a list of labels', function( done ) {
+		it( 'gets a list of labels', function( done ) {
 			client.getLabels( function( err, labels ) {
 				if ( err ) {
 					console.log( err, labels );
@@ -1684,18 +1702,18 @@ describe.skip( 'VSO Client Tests Preview.1', function() {
 	this.timeout( 20000 );
 	var client = {};
 	var fields = [
-			{ field: { id: -3, name: 'ID', refName: 'System.Id' }, value: 7 },
-			{ field: { id: -2, name: 'Area ID', refName: 'System.AreaId' }, value: 769 },
-			{ field: { id: -7, name: 'Area Path', refName: 'System.AreaPath' }, value: 'TFS Integration' },
-			{ field: { id: -12, name: 'Node Name', refName: 'System.NodeName' }, value: 'TFS Integration' },
-			{ field: { id: -42, name: 'Team Project', refName: 'System.TeamProject' }, value: 'TFS Integration' },
-			{ field: { id: -43, name: 'Area Level 1', refName: 'System.AreaLevel1' }, value: 'TFS Integration' },
-			{ field: { id: 8, name: 'Rev', refName: 'System.Rev' }, value: 20 }
-		];
+		{ field: { id: -3, name: 'ID', refName: 'System.Id' }, value: 7 },
+		{ field: { id: -2, name: 'Area ID', refName: 'System.AreaId' }, value: 769 },
+		{ field: { id: -7, name: 'Area Path', refName: 'System.AreaPath' }, value: 'TFS Integration' },
+		{ field: { id: -12, name: 'Node Name', refName: 'System.NodeName' }, value: 'TFS Integration' },
+		{ field: { id: -42, name: 'Team Project', refName: 'System.TeamProject' }, value: 'TFS Integration' },
+		{ field: { id: -43, name: 'Area Level 1', refName: 'System.AreaLevel1' }, value: 'TFS Integration' },
+		{ field: { id: 8, name: 'Rev', refName: 'System.Rev' }, value: 20 }
+	];
 
 	before( function( done ) {
-		client = Client.createClient( url, collection, username, password, getOptions("1.0-preview.1") );
-		clientOAuth = Client.createOAuthClient( url, collection, oauthToken, getOptions("1.0-preview.1") );
+		client = Client.createClient( url, collection, username, password, getOptions( "1.0-preview.1" ) );
+		clientOAuth = Client.createOAuthClient( url, collection, oauthToken, getOptions( "1.0-preview.1" ) );
 		// console.log(oauthToken);
 		done();
 	} );
