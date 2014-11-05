@@ -312,12 +312,9 @@ exports.Client = (function() {
     }
   };
 
-  Client.prototype.getProjects = function(includeCapabilities, stateFilter, pageSize, skip, callback) {
+  Client.prototype.getProjects = function(stateFilter, pageSize, skip, callback) {
     var path;
-    if (typeof includeCapabilities === 'function') {
-      callback = includeCapabilities;
-      includeCapabilities = stateFilter = pageSize = skip = null;
-    } else if (typeof stateFilter === 'function') {
+    if (typeof stateFilter === 'function') {
       callback = stateFilter;
       stateFilter = pageSize = skip = null;
     } else if (typeof pageSize === 'function') {
@@ -330,8 +327,7 @@ exports.Client = (function() {
     pageSize = pageSize != null ? pageSize : 100;
     skip = skip != null ? skip : 0;
     stateFilter = stateFilter != null ? stateFilter : 'WellFormed';
-    includeCapabilities = includeCapabilities != null ? includeCapabilities : false;
-    path = this.buildApiPath('projects', 'stateFilter=' + stateFilter + '&includeCapabilities=' + includeCapabilities + '&$top=' + pageSize + "&$skip=" + skip);
+    path = this.buildApiPath('projects', 'stateFilter=' + stateFilter + '&$top=' + pageSize + "&$skip=" + skip);
     return this.client.get(path, (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);

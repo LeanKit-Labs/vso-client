@@ -232,13 +232,10 @@ class exports.Client
   # Projects and Teams
   #########################################
 
-  getProjects: (includeCapabilities, stateFilter, pageSize, skip, callback) ->
+  getProjects: (stateFilter, pageSize, skip, callback) ->
     # valid stateFilter values: WellFormed, CreatePending, Deleting, New, All
 
-    if typeof includeCapabilities is 'function'
-      callback = includeCapabilities
-      includeCapabilities = stateFilter = pageSize = skip = null
-    else if typeof stateFilter is 'function'
+    if typeof stateFilter is 'function'
       callback = stateFilter
       stateFilter = pageSize = skip = null
     else if typeof pageSize is 'function'
@@ -251,9 +248,8 @@ class exports.Client
     pageSize = pageSize ? 100
     skip = skip ? 0
     stateFilter = stateFilter ? 'WellFormed'
-    includeCapabilities = includeCapabilities ? false
 
-    path = @buildApiPath 'projects', 'stateFilter=' + stateFilter + '&includeCapabilities=' + includeCapabilities + '&$top=' + pageSize + "&$skip=" + skip
+    path = @buildApiPath 'projects', 'stateFilter=' + stateFilter + '&$top=' + pageSize + "&$skip=" + skip
     @client.get path, (err, res, body) =>
       @parseReplyData err, res, body, callback
 
