@@ -1,6 +1,6 @@
 {
   "name": "vso-client",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Visual Studio Online Client",
   "main": "./public/vso-client.js",
   "scripts": {
@@ -29,8 +29,8 @@
   "dependencies": {
     "azure": "^0.9.16",
     "lodash": "~2.4.1",
-    "request": "~2.36.0",
-    "request-json": "~0.4.11"
+    "request": "~2.48.0",
+    "request-json": "~0.5.0"
   },
   "bugs": {
     "url": "https://github.com/LeanKit-Labs/vso-client/issues",
