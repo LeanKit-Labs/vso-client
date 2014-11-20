@@ -29,8 +29,8 @@
   "dependencies": {
     "azure": "^0.9.16",
     "lodash": "~2.4.1",
-    "request": "~2.36.0",
-    "request-json": "~0.4.11"
+    "request": "~2.48.0",
+    "request-json": "~0.5.0"
   },
   "bugs": {
     "url": "https://github.com/LeanKit-Labs/vso-client/issues",

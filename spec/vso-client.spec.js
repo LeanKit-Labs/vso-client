@@ -16,8 +16,8 @@ var serviceAccountUser = process.env.VSO_SERVICE_ACCOUNT_USER || 'your service a
 var serviceAccountPassword = process.env.VSO_SERVICE_ACCOUNT_PWD || 'your service account password';
 var oauthToken = process.env.VSO_OAUTH_TOKEN || 'dummyAccessToken';
 var memberId = process.env.VSO_MEMBER_ID || '00000000-0000-0000-0000-000000000000';
-proxy = process.env.VSO_PROXY;
-testProjectName = process.env.VSO_TEST_PROJECT || 'TFS INTEGRATION';
+var proxy = process.env.VSO_PROXY;
+var testProjectName = process.env.VSO_TEST_PROJECT || 'TFS INTEGRATION';
 
 function getOptions( overrideVersion ) {
 	options = {
@@ -118,15 +118,6 @@ describe( 'Versioning tests', function() {
 describe( 'VSO API 1.0 Tests', function() {
 	this.timeout( 20000 );
 	var client = {};
-	var fields = [
-		{ field: { id: -3, name: 'ID', refName: 'System.Id' }, value: 7 },
-		{ field: { id: -2, name: 'Area ID', refName: 'System.AreaId' }, value: 769 },
-		{ field: { id: -7, name: 'Area Path', refName: 'System.AreaPath' }, value: 'TFS Integration' },
-		{ field: { id: -12, name: 'Node Name', refName: 'System.NodeName' }, value: 'TFS Integration' },
-		{ field: { id: -42, name: 'Team Project', refName: 'System.TeamProject' }, value: 'TFS Integration' },
-		{ field: { id: -43, name: 'Area Level 1', refName: 'System.AreaLevel1' }, value: 'TFS Integration' },
-		{ field: { id: 8, name: 'Rev', refName: 'System.Rev' }, value: 20 }
-	];
 
 	before( function( done ) {
 		client = Client.createClient( url, collection, username, password, getOptions( "1.0" ) );
@@ -169,21 +160,6 @@ describe( 'VSO API 1.0 Tests', function() {
 			clientWithVersion.apiVersion.should.equal( expectedVersion );
 		} );
 
-
-		it( 'returns a field by name', function() {
-			var field = client.findItemField( fields, 'System.Rev' );
-			should.exist( field );
-			field.value.should.equal( 20 );
-		} );
-
-		it( 'returns the first field by name', function() {
-			var field = client.findFirstItemField( fields, [ 'Bogus', 'System.Rev', 'System.Id' ] );
-			should.exist( field );
-			field.value.should.equal( 20 );
-			field.field.name.should.equal( 'Rev' );
-		} );
-
-
 		describe( 'auth tests', function() {
 
 			it( 'fails authentication with error', function( done ) {
@@ -195,10 +171,10 @@ describe( 'VSO API 1.0 Tests', function() {
 					done();
 				} );
 			} );
+
 		} );
 
 	} );
-
 
 	describe( 'project tests', function() {
 		var testProject = null;
@@ -475,7 +451,7 @@ describe( 'VSO API 1.0 Tests', function() {
 	// Queries
 	// ---------------------------------------
 
-	describe( 'queries', function() {
+	describe.only( 'queries', function() {
 
 		var myQueries = null;
 		var testQuery = null;
@@ -494,7 +470,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return a list of queries', function( done ) {
+		it( 'returns a list of queries', function( done ) {
 			should.exist( testProject );
 			client.getQueries( testProject.name, 2, function( err, queries ) {
 				if ( err ) {
@@ -531,7 +507,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return a list of work items from saved query', function( done ) {
+		it( 'returns a list of work items from saved query', function( done ) {
 			should.exist( testProject );
 			should.exist( myBugsQuery );
 
@@ -547,7 +523,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should return a query', function( done ) {
+		it( 'returns a query by id', function( done ) {
 			should.exist( testProject );
 			should.exist( myBugsQuery );
 
@@ -567,7 +543,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should create a query folder', function( done ) {
+		it( 'creates a query folder', function( done ) {
 			testFolder = null;
 			should.exist( testProject );
 			should.exist( myQueries );
@@ -582,7 +558,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should create a query', function( done ) {
+		it( 'creates a query', function( done ) {
 			testQuery = null;
 			should.exist( testProject );
 			should.exist( testFolder );
@@ -600,7 +576,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should update a query by name', function( done ) {
+		it( 'updates a query by name', function( done ) {
 			should.exist( testProject );
 			should.exist( testFolder );
 			should.exist( testQuery );
@@ -623,7 +599,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should update a query by id', function( done ) {
+		it( 'updates a query by id', function( done ) {
 			should.exist( testProject );
 			should.exist( testFolder );
 			should.exist( testQuery );
@@ -646,7 +622,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should delete a query', function( done ) {
+		it( 'deletes a query', function( done ) {
 			should.exist( testProject );
 			should.exist( testQuery );
 			client.deleteQuery( testProject.name, testQuery.id, function( err, query ) {
@@ -656,7 +632,7 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it( 'should delete a query folder', function( done ) {
+		it( 'deletes a query folder', function( done ) {
 			should.exist( testProject );
 			should.exist( testFolder );
 			client.deleteFolder( testProject.name, testFolder.id, function( err, folder ) {
