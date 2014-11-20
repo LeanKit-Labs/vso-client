@@ -889,7 +889,7 @@ exports.Client = (function() {
         wiql: wiql
       };
     }
-    return this.client.patch(path, query, this.getOptions(true), (function(_this) {
+    return this.client.patch(path, query, this.getOptions(), (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
       };
@@ -1100,7 +1100,7 @@ exports.Client = (function() {
       name: name,
       description: description
     };
-    return this.client.post(path, this.getOptions(), room, (function(_this) {
+    return this.client.post(path, room, this.getOptions(), (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
       };
@@ -1114,7 +1114,7 @@ exports.Client = (function() {
       name: name,
       description: description
     };
-    return this.client.patch(path, this.getOptions(), room, (function(_this) {
+    return this.client.patch(path, room, this.getOptions(), (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
       };

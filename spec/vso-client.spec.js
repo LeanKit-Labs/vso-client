@@ -451,7 +451,7 @@ describe( 'VSO API 1.0 Tests', function() {
 	// Queries
 	// ---------------------------------------
 
-	describe.only( 'queries', function() {
+	describe( 'queries', function() {
 
 		var myQueries = null;
 		var testQuery = null;

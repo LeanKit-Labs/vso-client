@@ -660,7 +660,7 @@ class exports.Client
         name: name
         wiql: wiql
 
-    @client.patch path, query, @getOptions(true), (err, res, body) =>
+    @client.patch path, query, @getOptions(), (err, res, body) =>
       @parseReplyData err, res, body, callback
 
   createFolder: (projectName, name, parentFolderIdOrPath, callback) ->
@@ -794,7 +794,7 @@ class exports.Client
     room =
       name: name
       description: description
-    @client.post path, @getOptions(), room, (err, res, body) =>
+    @client.post path, room, @getOptions(), (err, res, body) =>
       @parseReplyData err, res, body, callback
 
   updateRoom: (roomId, name, description, callback) ->
@@ -802,7 +802,7 @@ class exports.Client
     room =
       name: name
       description: description
-    @client.patch path, @getOptions(), room, (err, res, body) =>
+    @client.patch path, room, @getOptions(), (err, res, body) =>
       @parseReplyData err, res, body, callback
 
   deleteRoom: (roomId, callback) ->
