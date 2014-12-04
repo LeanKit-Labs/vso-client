@@ -1918,6 +1918,16 @@ exports.Client = (function() {
     })(this));
   };
 
+  Client.prototype.deleteSubscription = function(id, callback) {
+    var path;
+    path = this.buildApiPath('hooks/subscriptions/' + id);
+    return this.client.del(path, this.getOptions(), (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
   return Client;
 
 })();
