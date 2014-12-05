@@ -1539,6 +1539,20 @@ describe( 'VSO API 1.0 Tests', function() {
 		// Service Hooks
 		// ---------------------------------------
 
+		var testProject = null;
+		var testSubscription = null;
+
+		before( function( done ) {
+			client.getProjects( function( err, projects ) {
+				// console.log(err);
+				// console.log(projects);
+				testProject = _.find( projects, function( p ) {
+					return p.name === testProjectName;
+				} );
+				done();
+			} );
+		} );
+
 		it( 'should get a list of publishers', function( done ) {
 			client.getConsumers( function( err, publishers ) {
 				if ( err ) console.log( err, publishers );
@@ -1644,24 +1658,34 @@ describe( 'VSO API 1.0 Tests', function() {
 			} );
 		} );
 
-		it.skip( 'should create a subscription', function( done ) {
+		it( 'should create a subscription', function( done ) {
+			should.exist( testProject );
 			var subscription = {
-				consumerActionId: 'httpRequest',
+				eventType: 'workitem.created',
+				publisherId: 'tfs',
+				resourceVersion: '1.0',
+				eventDescription: 'Any work item',
 				consumerId: 'webHooks',
+				consumerActionId: 'httpRequest',
+				actionDescription: '...',
 				consumerInputs: {
-					url: 'http://localhost:1234/test/consumer'
+					url: 'https://localhost:1234/test/test-consumer/' + testProject.id
 				},
-				eventType: 'buildCompleted',
-				publisherId: 'webHooks',
 				publisherInputs: {
-					url: 'http://localhost:1234/test/publisher'
+					projectId: testProject.id
 				}
 			};
+
 			client.createSubscription( subscription, function( err, sub ) {
 				if ( err ) console.log( err, sub );
 				should.not.exist( err );
 				should.exist( sub );
-				console.log( sub );
+				// console.log( sub );
+				sub.should.have.property( 'id' );
+				sub.should.have.property( 'url' );
+				sub.should.have.property( 'eventType' );
+				testSubscription = sub;
+				done();
 			} );
 		} );
 
@@ -1670,8 +1694,18 @@ describe( 'VSO API 1.0 Tests', function() {
 				if ( err ) console.log( err, subscriptions );
 				should.not.exist( err );
 				should.exist( subscriptions );
-				// console.log(subscriptions);
+				// console.log( subscriptions );
 				subscriptions.should.be.instanceOf( Array );
+				done();
+			} );
+		} );
+
+		it( 'deletes a subscription', function( done ) {
+			should.exist( testSubscription );
+			client.deleteSubscription( testSubscription.id, function( err, res ) {
+				if ( err ) console.log( err, res );
+				should.not.exist( err );
+				should.exist( res );
 				done();
 			} );
 		} );
