@@ -1371,7 +1371,7 @@ class exports.Client
     @client.post path, queryOptions, @getOptions(), (err, res, body) =>
       @parseReplyData err, res, body, callback
 
-  deleteSubscription: (id,callback) ->
+  deleteSubscription: (id, callback) ->
     path = @buildApiPath 'hooks/subscriptions/' + id
     @client.del path, @getOptions(), (err, res, body) =>
       @parseReplyData err, res, body, callback
