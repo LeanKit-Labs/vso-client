@@ -83,6 +83,11 @@ class exports.Client
       throw new Error "unknown authentication type"
     @_authType = authentication.type
     @apiVersion = options?.apiVersion || apiVersion
+    userAgent = 'vso-client/1.0 node/' + process.versions.node + ' ' + process.platform
+    if (options?.userAgent?)
+      @userAgent = options.userAgent + '; ' + userAgent
+    else
+      @userAgent = userAgent;
 
   parseReplyData: (error, res, body, callback) ->
     if error
@@ -165,7 +170,7 @@ class exports.Client
 
     options.headers['accept'] = 'application/json; api-version=' + @apiVersion
     options.headers['content-type'] = contentType
-    options.headers['user-agent'] = 'vso-client/1.0 node/' + process.versions.node + ' ' + process.platform
+    options.headers['user-agent'] = @userAgent
     options
 
   getPatchContentType : ->

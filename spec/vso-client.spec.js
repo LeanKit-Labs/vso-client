@@ -23,6 +23,7 @@ function getOptions( overrideVersion ) {
 	options = {
 		apiVersion: overrideVersion || "1.0"
 	};
+
 	if ( typeof (proxy) !== "undefined" || proxy !== null ) {
 		process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 		options.clientOptions = {
@@ -112,6 +113,27 @@ describe( 'Versioning tests', function() {
 		minimumVersionMet.should.equal( false );
 	} );
 
+
+} );
+
+describe( 'User Agent Tests', function() {
+
+	it( 'has a default user agent string', function() {
+		var clientNoOptions = Client.createClient( url, collection, username, password );
+		should.exist( clientNoOptions );
+		clientNoOptions.should.have.property('userAgent');
+		clientNoOptions.userAgent.should.startWith('vso-client/1.0');
+		// console.log(clientNoOptions.userAgent);
+	} );
+
+	it( 'has a custom user agent string', function() {
+		var appName = 'My App 1.0';
+		var clientWithOptions = Client.createClient( url, collection, username, password, { userAgent: appName } );
+		should.exist( clientWithOptions );
+		clientWithOptions.should.have.property('userAgent');
+		clientWithOptions.userAgent.should.startWith(appName);
+		// console.log(clientWithOptions.userAgent);
+	} );
 
 } );
 

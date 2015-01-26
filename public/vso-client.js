@@ -121,7 +121,7 @@ exports.Client = (function() {
   var getMinorVersion, getVersion, getVersionStage;
 
   function Client(url, collection, authentication, options) {
-    var apiUrl, spsUrl;
+    var apiUrl, spsUrl, userAgent;
     this.url = url;
     this.collection = collection;
     apiUrl = url;
@@ -140,6 +140,12 @@ exports.Client = (function() {
     }
     this._authType = authentication.type;
     this.apiVersion = (options != null ? options.apiVersion : void 0) || apiVersion;
+    userAgent = 'vso-client/1.0 node/' + process.versions.node + ' ' + process.platform;
+    if (((options != null ? options.userAgent : void 0) != null)) {
+      this.userAgent = options.userAgent + '; ' + userAgent;
+    } else {
+      this.userAgent = userAgent;
+    }
   }
 
   Client.prototype.parseReplyData = function(error, res, body, callback) {
@@ -241,7 +247,7 @@ exports.Client = (function() {
     contentType = patch && this.apiVersion !== '1.0-preview.1' ? 'application/json-patch+json' : 'application/json';
     options.headers['accept'] = 'application/json; api-version=' + this.apiVersion;
     options.headers['content-type'] = contentType;
-    options.headers['user-agent'] = 'vso-client/1.0 node/' + process.versions.node + ' ' + process.platform;
+    options.headers['user-agent'] = this.userAgent;
     return options;
   };
 

@@ -78,15 +78,28 @@ Note: Use `refreshToken` to renew an existing access token.
       }
     });
 
-## API Versioning
+## Client Options
+
+The VSO client supports a few optional settings, passed as an `options` object when you create the client.
+
+    var options = {
+      apiVersion: "1.0",
+      userAgent: "My App 1.0",
+      clientOptions: {
+        proxy: "http://localproxy.com"
+      }
+    }
+    var vso = require('vso-client');
+    var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd', options);
+
+
+### API Versioning
 
 Visual Studio Online API are [versioned](http://www.visualstudio.com/integrate/get-started/get-started-rest-basics-vsi#versioning) to ensure client applications keep working as expect when a new version of the API comes out.
 
 When you create a client using `createClient` or `createOAuthClient` you can explicitly specify the API version you wish to use.
 
-If you don't explicitly specify the version you want to use, version _1.0-preview.1_ will be used by default. Since it is up to the caller to pass the right parameters (and interpret the results) to the methods it calls, it is therefore recommended to explicitly pass a version when you create a client.
-
-Note: 1-0.preview means the latest version available, so, if you use it, a new version of the API may break your code. Therefore, it is recommended that you specify the full version for the stage part of the version (for example use _preview.1_ instead of _preview_) to make your code behavior deterministic.
+If you don't explicitly specify the version you want to use, the latest version will be used by default. Since it is up to the caller to pass the right parameters (and interpret the results) to the methods it calls, it is therefore recommended to explicitly pass a version when you create a client.
 
 In can specify the version by passing the apiVersion member in the options parameter.
 
@@ -95,6 +108,20 @@ An example with the  `createClient` (it works the same with `createOAuthClient`)
     var vso = require('vso-client');
     var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd', {apiVersion : "1.0-preview.1"});
 
+### Custom User Agent
+
+By default, the user agent string used by the client when making requests is `vso-client/{version} node/{version} {os}`. You can specify a custom application name to append to the user-agent string.
+
+    var vso = require('vso-client');
+    var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd', {userAgent : "My App 1.0"});
+
+### Other Request Options
+
+You can pass other client options to be used by the internal [request](https://www.npmjs.com/package/request) client by using the `clientOptions` property of the options object, such as a proxy server to use for requests.
+
+    var requestOptions = { proxy: 'http://localproxy.com' };
+    var vso = require('vso-client');
+    var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd', { clientOptions: requestOptions });
 
 ## API Reference
 
