@@ -80,7 +80,7 @@ Note: Use `refreshToken` to renew an existing access token.
 
 ## Client Options
 
-The VSO client supports a few optional settings, passed as an `options` object when you create the client.
+The VSO client supports a few optional settings, passed as an `options` object when you create the client (The last parameter of createClient and createOAuthClient)
 
     var options = {
       apiVersion: "1.0",
@@ -113,7 +113,11 @@ An example with the  `createClient` (it works the same with `createOAuthClient`)
 By default, the user agent string used by the client when making requests is `vso-client/{version} node/{version} {os}`. You can specify a custom application name to append to the user-agent string.
 
     var vso = require('vso-client');
-    var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd', {userAgent : "My App 1.0"});
+    var client = vso.createClient('url', 'collection', 'your-username', 'your-p@ssw0rd', {userAgent : "My-App/1.0"});
+
+The application name shouldn't contain spaces and if you want to specify a version name, it shouldn't be part of the application name but separated with a slash.
+
+Althoug VSO client doesn't enforce the product name for user agent you should follow the rules explained in [RFC 7231](http://tools.ietf.org/html/rfc7231#page-46)
 
 ### Other Request Options
 
