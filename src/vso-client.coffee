@@ -828,7 +828,7 @@ class exports.Client
   joinRoom: (roomId, userId, userGuid, callback) ->
     # console.log userId
     path = @buildApiPath 'chat/rooms/' + roomId + '/users/' + userGuid
-    @client.put path, @getOptions(), userId, (err, res, body) ->
+    @client.put path, userId, @getOptions(), (err, res, body) ->
       callback err, res.statusCode
 
   leaveRoom: (roomId, userId, callback) ->

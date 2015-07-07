@@ -1160,7 +1160,7 @@ exports.Client = (function() {
   Client.prototype.joinRoom = function(roomId, userId, userGuid, callback) {
     var path;
     path = this.buildApiPath('chat/rooms/' + roomId + '/users/' + userGuid);
-    return this.client.put(path, this.getOptions(), userId, function(err, res, body) {
+    return this.client.put(path, userId, this.getOptions(), function(err, res, body) {
       return callback(err, res.statusCode);
     });
   };
