@@ -133,7 +133,7 @@ Review the [tests](https://github.com/leankit-labs/vso-client/blob/master/spec/v
 
 ## Developing from Source
 
-The VSO client is written in [CoffeeScript](http://coffeescript.org/). To modify and rebuild the client from source, you will need the CoffeeScript compiler. [Gulp.js](http://gulpjs.com/) is used to automatically build the client and run all [mocha](http://visionmedia.github.io/mocha/) tests.
+The VSO client is written in [CoffeeScript](http://coffeescript.org/). To modify and rebuild the client from source, you will need the CoffeeScript compiler. [Gulp.js](http://gulpjs.com/) is used to automatically build the client and run all [mocha](http://mochajs.org/) tests.
 
 * Clone or download the `vso-client` Github repository.
 * Open a Terminal window, change to the repository folder, and install dependent packages.
