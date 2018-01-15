@@ -8,7 +8,7 @@ request = require("request");
 
 azure = require('azure');
 
-apiVersion = '1.0';
+apiVersion = '2.0';
 
 spsUri = 'https://app.vssps.visualstudio.com';
 
@@ -125,12 +125,12 @@ exports.Client = (function() {
     this.url = url;
     this.collection = collection;
     apiUrl = url;
-    this.client = requestJson.newClient(apiUrl, options != null ? options.clientOptions : void 0);
+    this.client = requestJson.createClient(apiUrl, options != null ? options.clientOptions : void 0);
     if (authentication === AuthenticationCredential || authentication.type === "Credential") {
       this.client.setBasicAuth(authentication.username, authentication.password);
     } else if (authentication === AuthenticationOAuth || authentication.type === "OAuth") {
       spsUrl = (options != null ? options.spsUri : void 0) || spsUri;
-      this.clientSPS = requestJson.newClient(spsUrl, options != null ? options.clientOptions : void 0);
+      this.clientSPS = requestJson.createClient(spsUrl, options != null ? options.clientOptions : void 0);
       this.client.headers.Authorization = "bearer " + authentication.accessToken;
       this.clientSPS.headers.Authorization = "bearer " + authentication.accessToken;
     } else if (authentication === AuthenticationWrap || authentication.type === "Wrap") {
@@ -330,7 +330,7 @@ exports.Client = (function() {
     }
   };
 
-  Client.prototype.getProjects = function(stateFilter, pageSize, skip, callback) {
+  Client.prototype.getProjects = function(stateFilter, pageSize, skip, callback) {  
     var path;
     if (typeof stateFilter === 'function') {
       callback = stateFilter;
@@ -960,6 +960,27 @@ exports.Client = (function() {
     })(this));
   };
 
+  Client.prototype.getWorkItemTypesNames = function(projectName, callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/workitemtypes', null, {
+      projectName: projectName
+    });
+    return this.client.get(path, this.getOptions(), (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, function(err, results){
+          let names;
+          if(err) {
+            return callback(err, results);
+          } else {
+            names = _.map(results, 'name');
+            return callback(err, names);
+          }
+        });
+      };
+    })(this));
+  };
+
   Client.prototype.getWorkItemType = function(projectName, workItemType, callback) {
     var path;
     this.checkAndRequireMinimumVersion("1.0-preview.2");
@@ -980,6 +1001,25 @@ exports.Client = (function() {
     return this.client.get(path, this.getOptions(), (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemRelationTypesNames = function(callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/workitemrelationtypes');
+    return this.client.get(path, this.getOptions(), (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, function(err, results){
+          let names;
+          if(err) {
+            return callback(err, results);
+          } else {
+            names = _.map(results, 'name');
+            return callback(err, names);
+          }
+        });
       };
     })(this));
   };
@@ -1028,6 +1068,30 @@ exports.Client = (function() {
     return this.client.get(path, this.getOptions(), (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemFieldsShort = function(callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/fields');
+    return this.client.get(path, this.getOptions(), (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, function(err, results){
+          let short;
+          if(err) {
+            return callback(err, results);
+          } else {
+            short = _.map(results, (data, result) => {
+              return {
+                name: data.name,
+                nameReference: data.referenceName
+              }
+            });
+            return callback(err, short);
+          }
+        });
       };
     })(this));
   };
