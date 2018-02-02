@@ -224,7 +224,11 @@ exports.Client = (function() {
     basePath = "";
     if (!(options != null ? options.excludeCollection : void 0)) {
       if (options != null ? options.projectName : void 0) {
-        basePath = '/' + this.collection + '/' + (encodeURI(options.projectName));
+        if (options != null ? options.teamName : void 0){
+          basePath = '/' + this.collection + '/' + (encodeURI(options.projectName))+ '/' + (encodeURI(options.teamName));
+        } else{
+          basePath = '/' + this.collection + '/' + (encodeURI(options.projectName));
+        }
       } else {
         basePath = '/' + this.collection;
       }
@@ -414,6 +418,29 @@ exports.Client = (function() {
         return _this.parseReplyData(err, res, body, callback);
       };
     })(this));
+  };
+
+  Client.prototype.getIterations = function(projectName, teamName, callback) {
+    var path;
+    if (this.apiVersion === "1.0-preview.1") {
+      console.log('Not Supported!');
+    } else {
+        path = this.buildApiPath("work/TeamSettings/Iterations", null, {
+        projectName: projectName,
+        teamName: teamName
+      });
+      return this.client.get(path,this.getOptions(), (function(_this) {
+        return function(err, res, body) {
+          if (err) {
+            return callback(err, body);
+          } else if (res.statusCode === 404) {
+            return callback((body != null ? body.message : void 0) || "Error getting Iterations", body);
+          } else {
+            return _this.parseReplyData(err, res, body, callback);
+          }
+        };
+      })(this));
+    }
   };
 
   Client.prototype.getTeam = function(projectId, teamId, callback) {
