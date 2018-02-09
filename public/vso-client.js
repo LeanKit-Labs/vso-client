@@ -2037,10 +2037,13 @@ exports.Client = (function() {
             var bd = { results:[], errors:0, count:0 };
             body.value.map(function(b){
               if (b!=null & b.code == 404){
-                bd.results.push((b.body != null ? b.body : void 0) || ('{ "code":404, "count":1, "value":"Error with your batch of WorkItem Actions" }'));
+                var bdy = null;
+                try { bdy = JSON.parse(b.body); }
+                catch(e) { bdy = b.body != null ? b.body : null; }
+                bd.results.push((bdy != null ? bdy : void 0) || { "code":404, "count":1, "value":"Error with your batch of WorkItem Actions" });
                 bd.errors++;
               } else {
-                if(b.code == 400) bd.errors++;
+                if(b.code == 400) { bd.errors++; }
                 try { bd.results.push(JSON.parse(b.body)); }
                 catch(e) { bd.results.push(b.body); }
               }
