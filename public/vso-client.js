@@ -423,7 +423,7 @@ exports.Client = (function() {
   Client.prototype.getIterations = function(projectName, teamName, callback) {
     var path;
     if (this.apiVersion === "1.0-preview.1") {
-      console.log('Not Supported!');
+      return callback("Not Supported!", null);
     } else {
         path = this.buildApiPath("work/TeamSettings/Iterations", null, {
         projectName: projectName,
@@ -2028,3 +2028,23 @@ exports.Client = (function() {
   return Client;
 
 })();
+
+Client.prototype.batchRequest = function(methods, callback) {
+  var path;
+  if (this.apiVersion === "1.0-preview.1") {
+    return callback("Not Supported!", null);
+  } else {
+    path = this.buildApiPath("wit/$batch", null, null);
+    return this.client.post(path, methods, this.getOptions(true), (function(_this) {
+      return function(err, res, body) {
+        if (err) {
+          return callback(err, body);
+        } else if (res.statusCode === 404) {
+          return callback((body != null ? body.message : void 0) || "Error with your batch of WorkItem Actions", body);
+        } else {
+          return _this.parseReplyData(err, res, body, callback);
+        }
+      };
+    })(this));
+  }
+};
