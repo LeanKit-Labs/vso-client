@@ -2025,26 +2025,29 @@ exports.Client = (function() {
     })(this));
   };
 
+  Client.prototype.batchRequest = function(methods, callback) {
+    var path;
+    if (this.apiVersion === "1.0-preview.1") {
+      return callback("Not Supported!", null);
+    } else {
+      path = this.buildApiPath("wit/$batch", null, null);
+      return this.client.post(path, methods, this.getOptions(), (function(_this) {
+        return function(err, res, body) {
+          if (err) {
+            return callback(err.toString(), body);
+          } else if (res.statusCode === 404) {
+            return callback((body != null ? body.message : void 0) || "Error with your batch of WorkItem Actions", body);
+          } else if (body && body.value!=null && body.value[0]!=null & body.value[0].code == 404){
+            return callback((body.value[0].body != null ? body.value[0].body : void 0) || 
+            ('{ "code":404, "count":1, "value":"Error with your batch of WorkItem Actions" }'), body);
+          } else {
+            return _this.parseReplyData(err, res, body, callback);
+          }
+        };
+      })(this));
+    }
+  };
+
   return Client;
 
-})();
-
-Client.prototype.batchRequest = function(methods, callback) {
-  var path;
-  if (this.apiVersion === "1.0-preview.1") {
-    return callback("Not Supported!", null);
-  } else {
-    path = this.buildApiPath("wit/$batch", null, null);
-    return this.client.post(path, methods, this.getOptions(true), (function(_this) {
-      return function(err, res, body) {
-        if (err) {
-          return callback(err, body);
-        } else if (res.statusCode === 404) {
-          return callback((body != null ? body.message : void 0) || "Error with your batch of WorkItem Actions", body);
-        } else {
-          return _this.parseReplyData(err, res, body, callback);
-        }
-      };
-    })(this));
-  }
-};
+})()
