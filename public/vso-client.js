@@ -2033,15 +2033,34 @@ exports.Client = (function() {
       path = this.buildApiPath("wit/$batch", null, null);
       return this.client.post(path, methods, this.getOptions(), (function(_this) {
         return function(err, res, body) {
-          if (err) {
-            return callback(err.toString(), body);
-          } else if (res.statusCode === 404) {
-            return callback((body != null ? body.message : void 0) || "Error with your batch of WorkItem Actions", body);
-          } else if (body && body.value!=null && body.value[0]!=null & body.value[0].code == 404){
-            return callback((body.value[0].body != null ? body.value[0].body : void 0) || 
-            ('{ "code":404, "count":1, "value":"Error with your batch of WorkItem Actions" }'), body);
+          if(body && body.value!=null && Array.isArray(body.value)) {
+            var bd = { results:[], errors:0, count:0 };
+            body.value.map(function(b){
+              if (b!=null & b.code == 404){
+                bd.results.push((b.body != null ? b.body : void 0) || ('{ "code":404, "count":1, "value":"Error with your batch of WorkItem Actions" }'));
+                bd.errors++;
+              } else {
+                if(b.code == 400) bd.errors++;
+                try { bd.results.push(JSON.parse(b.body)); }
+                catch(e) { bd.results.push(b.body); }
+              }
+            });
+            if (err) {
+              return callback(err.toString(), b);
+            } else if (res.statusCode === 404) {
+              return callback((body != null ? body.message : void 0) || "Error with your batch of WorkItem Actions", body);
+            } else {
+              bd.count = bd.results.length;
+              return _this.parseReplyData(err, res, bd, callback);
+            }
           } else {
-            return _this.parseReplyData(err, res, body, callback);
+            if (err) {
+              return callback(err.toString(), body);
+            } else if (res.statusCode === 404) {
+              return callback((body != null ? body.message : void 0) || "Error with your batch of WorkItem Actions", body);
+            } else {
+              return _this.parseReplyData(err, res, body, callback);
+            }
           }
         };
       })(this));
