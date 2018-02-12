@@ -8,7 +8,7 @@ request = require("request");
 
 azure = require('azure');
 
-apiVersion = '1.0';
+apiVersion = '2.0';
 
 spsUri = 'https://app.vssps.visualstudio.com';
 
@@ -125,12 +125,12 @@ exports.Client = (function() {
     this.url = url;
     this.collection = collection;
     apiUrl = url;
-    this.client = requestJson.newClient(apiUrl, options != null ? options.clientOptions : void 0);
+    this.client = requestJson.createClient(apiUrl, options != null ? options.clientOptions : void 0);
     if (authentication === AuthenticationCredential || authentication.type === "Credential") {
       this.client.setBasicAuth(authentication.username, authentication.password);
     } else if (authentication === AuthenticationOAuth || authentication.type === "OAuth") {
       spsUrl = (options != null ? options.spsUri : void 0) || spsUri;
-      this.clientSPS = requestJson.newClient(spsUrl, options != null ? options.clientOptions : void 0);
+      this.clientSPS = requestJson.createClient(spsUrl, options != null ? options.clientOptions : void 0);
       this.client.headers.Authorization = "bearer " + authentication.accessToken;
       this.clientSPS.headers.Authorization = "bearer " + authentication.accessToken;
     } else if (authentication === AuthenticationWrap || authentication.type === "Wrap") {
@@ -224,7 +224,11 @@ exports.Client = (function() {
     basePath = "";
     if (!(options != null ? options.excludeCollection : void 0)) {
       if (options != null ? options.projectName : void 0) {
-        basePath = '/' + this.collection + '/' + (encodeURI(options.projectName));
+        if (options != null ? options.teamName : void 0){
+          basePath = '/' + this.collection + '/' + (encodeURI(options.projectName))+ '/' + (encodeURI(options.teamName));
+        } else{
+          basePath = '/' + this.collection + '/' + (encodeURI(options.projectName));
+        }
       } else {
         basePath = '/' + this.collection;
       }
@@ -330,7 +334,7 @@ exports.Client = (function() {
     }
   };
 
-  Client.prototype.getProjects = function(stateFilter, pageSize, skip, callback) {
+  Client.prototype.getProjects = function(stateFilter, pageSize, skip, callback) {  
     var path;
     if (typeof stateFilter === 'function') {
       callback = stateFilter;
@@ -414,6 +418,29 @@ exports.Client = (function() {
         return _this.parseReplyData(err, res, body, callback);
       };
     })(this));
+  };
+
+  Client.prototype.getIterations = function(projectName, teamName, callback) {
+    var path;
+    if (this.apiVersion === "1.0-preview.1") {
+      return callback("Not Supported!", null);
+    } else {
+        path = this.buildApiPath("work/TeamSettings/Iterations", null, {
+        projectName: projectName,
+        teamName: teamName
+      });
+      return this.client.get(path,this.getOptions(), (function(_this) {
+        return function(err, res, body) {
+          if (err) {
+            return callback(err, body);
+          } else if (res.statusCode === 404) {
+            return callback((body != null ? body.message : void 0) || "Error getting Iterations", body);
+          } else {
+            return _this.parseReplyData(err, res, body, callback);
+          }
+        };
+      })(this));
+    }
   };
 
   Client.prototype.getTeam = function(projectId, teamId, callback) {
@@ -960,6 +987,27 @@ exports.Client = (function() {
     })(this));
   };
 
+  Client.prototype.getWorkItemTypesNames = function(projectName, callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/workitemtypes', null, {
+      projectName: projectName
+    });
+    return this.client.get(path, this.getOptions(), (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, function(err, results){
+          let names;
+          if(err) {
+            return callback(err, results);
+          } else {
+            names = _.map(results, 'name');
+            return callback(err, names);
+          }
+        });
+      };
+    })(this));
+  };
+
   Client.prototype.getWorkItemType = function(projectName, workItemType, callback) {
     var path;
     this.checkAndRequireMinimumVersion("1.0-preview.2");
@@ -980,6 +1028,25 @@ exports.Client = (function() {
     return this.client.get(path, this.getOptions(), (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemRelationTypesNames = function(callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/workitemrelationtypes');
+    return this.client.get(path, this.getOptions(), (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, function(err, results){
+          let names;
+          if(err) {
+            return callback(err, results);
+          } else {
+            names = _.map(results, 'name');
+            return callback(err, names);
+          }
+        });
       };
     })(this));
   };
@@ -1028,6 +1095,30 @@ exports.Client = (function() {
     return this.client.get(path, this.getOptions(), (function(_this) {
       return function(err, res, body) {
         return _this.parseReplyData(err, res, body, callback);
+      };
+    })(this));
+  };
+
+  Client.prototype.getWorkItemFieldsShort = function(callback) {
+    var path;
+    this.checkAndRequireMinimumVersion("1.0-preview.2");
+    path = this.buildApiPath('wit/fields');
+    return this.client.get(path, this.getOptions(), (function(_this) {
+      return function(err, res, body) {
+        return _this.parseReplyData(err, res, body, function(err, results){
+          let short;
+          if(err) {
+            return callback(err, results);
+          } else {
+            short = _.map(results, (data, result) => {
+              return {
+                name: data.name,
+                nameReference: data.referenceName
+              }
+            });
+            return callback(err, short);
+          }
+        });
       };
     })(this));
   };
@@ -1934,6 +2025,51 @@ exports.Client = (function() {
     })(this));
   };
 
+  Client.prototype.batchRequest = function(methods, callback) {
+    var path;
+    if (this.apiVersion === "1.0-preview.1") {
+      return callback("Not Supported!", null);
+    } else {
+      path = this.buildApiPath("wit/$batch", null, null);
+      return this.client.post(path, methods, this.getOptions(), (function(_this) {
+        return function(err, res, body) {
+          if(body && body.value!=null && Array.isArray(body.value)) {
+            var bd = { results:[], errors:0, count:0 };
+            body.value.map(function(b){
+              if (b!=null & b.code == 404){
+                var bdy = null;
+                try { bdy = JSON.parse(b.body); }
+                catch(e) { bdy = b.body != null ? b.body : null; }
+                bd.results.push((bdy != null ? bdy : void 0) || { "code":404, "count":1, "value":"Error with your batch of WorkItem Actions" });
+                bd.errors++;
+              } else {
+                if(b.code == 400) { bd.errors++; }
+                try { bd.results.push(JSON.parse(b.body)); }
+                catch(e) { bd.results.push(b.body); }
+              }
+            });
+            if (err) {
+              return callback(err.toString(), b);
+            } else if (res.statusCode === 404) {
+              return callback((body != null ? body.message : void 0) || "Error with your batch of WorkItem Actions", body);
+            } else {
+              bd.count = bd.results.length;
+              return _this.parseReplyData(err, res, bd, callback);
+            }
+          } else {
+            if (err) {
+              return callback(err.toString(), body);
+            } else if (res.statusCode === 404) {
+              return callback((body != null ? body.message : void 0) || "Error with your batch of WorkItem Actions", body);
+            } else {
+              return _this.parseReplyData(err, res, body, callback);
+            }
+          }
+        };
+      })(this));
+    }
+  };
+
   return Client;
 
-})();
+})()
